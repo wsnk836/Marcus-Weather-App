@@ -2,8 +2,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 import requests
 import time
-import smtplib
-from email.message import EmailMessage
 
 # Page Configuration
 st.set_page_config(
@@ -376,30 +374,11 @@ def load_live_weather():
 load_live_weather()
 
 # ==========================================
-# --- COMMUNITY FEEDBACK & EMAIL LOG ---
+# --- COMMUNITY FEEDBACK & DIRECT API EMAIL ---
 # ==========================================
 st.markdown("<div style='margin: 40px 0 20px 0;'></div>", unsafe_allow_html=True)
 st.subheader("💬 Community Feedback & Station Log")
-st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Send local spotter reports or dashboard suggestions directly to the command email.</p>", unsafe_allow_html=True)
-
-def send_feedback_email(name, location, message):
-    try:
-        sender_email = st.secrets["email"]["sender"]
-        sender_password = st.secrets["email"]["password"]
-        
-        msg = EmailMessage()
-        msg.set_content(f"New weather report/feedback received:\n\nName/Callsign: {name}\nLocation: {location}\nTime: {time.strftime('%m/%d/%Y %I:%M %p')}\n\nMessage:\n{message}")
-        msg['Subject'] = f"🚨 Weather App Report from {name}"
-        msg['From'] = sender_email
-        msg['To'] = "wsnk836@gmail.com"
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(sender_email, sender_password)
-            smtp.send_message(msg)
-        return True
-    except Exception as e:
-        st.error(f"Failed to send email. Check your Streamlit secrets configuration. Error: {e}")
-        return False
+st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Send local spotter reports or dashboard suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
 
 with st.form("feedback_form", clear_on_submit=True):
     col_name, col_loc = st.columns(2)
@@ -416,10 +395,22 @@ with st.form("feedback_form", clear_on_submit=True):
             name_val = user_name.strip() if user_name else "Anonymous Spotter"
             loc_val = user_location.strip() if user_location else "Marcus, IA"
             
-            with st.spinner("Dispatching email..."):
-                success = send_feedback_email(name_val, loc_val, user_message.strip())
-                if success:
+            payload = {
+                "name": name_val,
+                "location": loc_val,
+                "message": user_message.strip(),
+                "_to": "wsnk836@gmail.com",
+                "_subject": f"🚨 Weather App Report from {name_val}"
+            }
+            
+            try:
+                response = requests.post("https://formsubmit.co/ajax/wsnk836@gmail.com", data=payload, timeout=10)
+                if response.status_code == 200:
                     st.success("Feedback sent directly to wsnk836@gmail.com!")
+                else:
+                    st.error("Failed to send message via the mail gateway. Please try again later.")
+            except Exception as e:
+                st.error(f"Network error while dispatching email: {e}")
         else:
             st.warning("Please enter a message before submitting.")
 

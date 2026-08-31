@@ -285,3 +285,11 @@ components.html("""
         if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+    }
+</script>
+""", height=60, scrolling=False)
+
+
+def get_enhanced_icon_url(raw_url: str) -> str:
+    """Upgrades NWS icon URL resolution to large format for maximum clarity."""
+    if not raw_url:

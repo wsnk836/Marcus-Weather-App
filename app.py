@@ -75,6 +75,17 @@ st.markdown("""
         line-height: 1.5;
     }
     .welcome-card { border-left: 4px solid #ef4444; }
+    .permission-box {
+        background: #18191f;
+        border: 1px solid #27272a;
+        border-top: 3px solid #38bdf8;
+        border-radius: 14px;
+        padding: 30px;
+        text-align: center;
+        max-width: 600px;
+        margin: 50px auto;
+        box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.7);
+    }
     .alert-card-severe {
         background: rgba(239, 68, 68, 0.12);
         border: 1px solid rgba(239, 68, 68, 0.3);
@@ -185,56 +196,74 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- GEOLOCATION JAVASCRIPT BRIDGE ---
-requests_comp.html("""
-<script>
-    function fetchLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const urlParams = new URLSearchParams(window.parent.location.search);
-                    if (urlParams.get('lat') != lat || urlParams.get('lon') != lon) {
-                        urlParams.set('lat', lat);
-                        urlParams.set('lon', lon);
-                        window.parent.location.search = urlParams.toString();
-                    }
-                },
-                (error) => {
-                    console.warn("Geolocation access denied or failed: ", error.message);
-                },
-                { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
-            );
-        }
-    }
-    fetchLocation();
-</script>
-""", height=0, width=0)
-
 query_params = st.query_params
 user_lat = query_params.get("lat")
 user_lon = query_params.get("lon")
 
-# If geolocation coordinates are not yet available in query parameters, prompt the user
+# If geolocation coordinates are missing, present an explicit action button and JS prompt
 if not user_lat or not user_lon:
     st.markdown("""
-    <div class="command-card welcome-card" style="text-align: center; padding: 40px 20px;">
-        <h3>📍 Location Access Required</h3>
-        <p style="color: #a1a1aa; margin-top: 10px;">
-            Please allow location access in your browser prompt to anchor your live position on the weather radar and load local NWS telemetry.
+    <div class="permission-box">
+        <h2 style="color: #f87171; margin-bottom: 10px;">📍 Location Permission Required</h2>
+        <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px;">
+            Weather Command needs access to your device's location to load local Doppler radar loops, severe weather alerts, and regional NWS forecasts.
         </p>
     </div>
     """, unsafe_allow_html=True)
-    
-    with st.expander("📍 Or Enter Coordinates Manually"):
-        with st.form("manual_coord_form"):
-            man_lat = st.number_input("Latitude", value=42.82, format="%.4f")
-            man_lon = st.number_input("Longitude", value=-95.805, format="%.4f")
-            if st.form_submit_button("Load Location"):
-                st.query_params["lat"] = str(man_lat)
-                st.query_params["lon"] = str(man_lon)
-                st.rerun()
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # Interactive HTML button that triggers browser's native GPS permission prompt
+        requests_comp.html("""
+        <div style="text-align: center;">
+            <button onclick="requestUserLocation()" style="
+                background-color: #ef4444; 
+                color: white; 
+                border: none; 
+                padding: 12px 24px; 
+                font-size: 1rem; 
+                font-weight: 700; 
+                border-radius: 8px; 
+                cursor: pointer;
+                box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+                transition: background 0.2s;
+            ">
+                Grant Location Access
+            </button>
+        </div>
+        <script>
+            function requestUserLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const lat = position.coords.latitude;
+                            const lon = position.coords.longitude;
+                            const urlParams = new URLSearchParams(window.parent.location.search);
+                            urlParams.set('lat', lat);
+                            urlParams.set('lon', lon);
+                            window.parent.location.search = urlParams.toString();
+                        },
+                        (error) => {
+                            alert("Location access was denied or failed. Please check your browser settings or enter coordinates manually below.");
+                            console.warn("Geolocation error: ", error.message);
+                        },
+                        { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
+                    );
+                } else {
+                    alert("Geolocation is not supported by your browser.");
+                }
+            }
+        </script>
+        """, height=70)
+
+        with st.expander("📍 Or Enter Coordinates Manually"):
+            with st.form("manual_coord_form"):
+                man_lat = st.number_input("Latitude", value=41.72, format="%.4f")
+                man_lon = st.number_input("Longitude", value=-91.59, format="%.4f")
+                if st.form_submit_button("Load Location"):
+                    st.query_params["lat"] = str(man_lat)
+                    st.query_params["lon"] = str(man_lon)
+                    st.rerun()
     st.stop()
 
 try:

@@ -390,65 +390,39 @@ def load_live_weather():
             </div>
             """, unsafe_allow_html=True)
             
-            # --- PROCESS PERIODS INTO DAILY CARDS & ACCURATE HIGHS/LOWS ---
-            daily_dict = {}
-            for p in periods:
-                name = p['name']
-                # Clean up names like "Today", "Tonight", "Monday", "Monday Night" into standardized Day groups if needed, 
-                # or pair them sequentially. Let's do a robust sequential/date-based aggregation:
-            
-            # Better approach: Loop through periods and map day/night pairs
+            # --- PROCESS PERIODS INTO DAILY CARDS ---
             daily_forecasts = []
             i = 0
             while i < len(periods):
                 p = periods[i]
                 if p['isDaytime']:
                     day_name = p['name']
-                    high_val = f"{p['temperature']}°{p['temperatureUnit']}"
+                    high = f"{p['temperature']}°{p['temperatureUnit']}"
                     forecast = p['shortForecast']
-                    detailed = p['detailedForecast']
-                    wind_speed = p['windSpeed']
-                    wind_dir = p.get('windDirection', '')
                     icon = p.get('icon', '')
                     
-                    low_val = "N/A"
-                    low_detailed = ""
-                    # Check if next period is the corresponding night
+                    low = "N/A"
                     if i + 1 < len(periods) and not periods[i+1]['isDaytime']:
-                        night_p = periods[i+1]
-                        low_val = f"{night_p['temperature']}°{night_p['temperatureUnit']}"
-                        low_detailed = night_p['detailedForecast']
+                        low = f"{periods[i+1]['temperature']}°{periods[i+1]['temperatureUnit']}"
                         i += 1 
                     
                     daily_forecasts.append({
                         "day": day_name, 
-                        "high": high_val, 
-                        "low": low_val,
-                        "forecast": forecast,
-                        "detailed": detailed,
-                        "low_detailed": low_detailed,
-                        "wind_speed": wind_speed,
-                        "wind_dir": wind_dir,
+                        "high": high, 
+                        "low": low,
+                        "forecast": forecast, 
                         "icon": icon
                     })
                 else:
-                    # Standalone night period (e.g., if starting with Tonight)
                     day_name = p['name']
-                    low_val = f"{p['temperature']}°{p['temperatureUnit']}"
-                    detailed = p['detailedForecast']
-                    wind_speed = p['windSpeed']
-                    wind_dir = p.get('windDirection', '')
+                    low = f"{p['temperature']}°{p['temperatureUnit']}"
                     forecast = p['shortForecast']
                     icon = p.get('icon', '')
                     daily_forecasts.append({
                         "day": day_name, 
                         "high": "N/A", 
-                        "low": low_val,
-                        "forecast": forecast,
-                        "detailed": detailed,
-                        "low_detailed": "",
-                        "wind_speed": wind_speed,
-                        "wind_dir": wind_dir,
+                        "low": low,
+                        "forecast": forecast, 
                         "icon": icon
                     })
                 i += 1
@@ -460,9 +434,6 @@ def load_live_weather():
             with tab3:
                 st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
                 days_to_show = daily_forecasts[:3]
-                
-                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 8px;'>👆 Click a day below to pull up detailed NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
-                selected_day_3 = st.radio("Select Outlook Day", [d['day'] for d in days_to_show], horizontal=True, label_visibility="collapsed", key="radio_3day")
                 
                 cards_html = '<div class="horizontal-scroll-container">'
                 for day_data in days_to_show:
@@ -530,14 +501,11 @@ def load_live_weather():
                     }}
                 </style>
                 {cards_html}
-                """, height=150, scrolling=False)
+                """, height=160, scrolling=False)
 
             with tab7:
                 st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
                 days_to_show = daily_forecasts[:7]
-                
-                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 8px;'>👆 Click a day below to pull up detailed NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
-                selected_day_7 = st.radio("Select Outlook Day 7", [d['day'] for d in days_to_show], horizontal=True, label_visibility="collapsed", key="radio_7day")
                 
                 cards_html_7 = '<div class="horizontal-scroll-container">'
                 for day_data in days_to_show:
@@ -605,48 +573,7 @@ def load_live_weather():
                     }}
                 </style>
                 {cards_html_7}
-                """, height=150, scrolling=False)
-
-            # --- DETAILED NWS SIOUX FALLS DRILL-DOWN CONTAINER ---
-            active_selected_day = daily_forecasts[0]['day']
-            if st.session_state.get("radio_3day"):
-                active_selected_day = st.session_state.radio_3day
-            if st.session_state.get("radio_7day"):
-                active_selected_day = st.session_state.radio_7day
-
-            selected_record = next((d for d in daily_forecasts if d['day'] == active_selected_day), daily_forecasts[0])
-
-            # Robust High/Low extraction: look through periods to find the matching high and low temperature values for this specific day
-            extracted_high = selected_record['high']
-            extracted_low = selected_record['low']
-            
-            if extracted_high == "N/A" or extracted_low == "N/A":
-                # Fallback search through all periods to find any matching day/night parts if split
-                base_name = selected_record['day'].replace(" Night", "")
-                for p in periods:
-                    if base_name.lower() in p['name'].lower():
-                        if p['isDaytime'] and extracted_high == "N/A":
-                            extracted_high = f"{p['temperature']}°{p['temperatureUnit']}"
-                        elif not p['isDaytime'] and extracted_low == "N/A":
-                            extracted_low = f"{p['temperature']}°{p['temperatureUnit']}"
-
-            st.markdown(f"""
-            <div style="background: #18191f; border: 1px solid #27272a; border-left: 3px solid #ef4444; border-radius: 10px; padding: 16px 18px; margin-top: 15px;">
-                <div style="font-weight: 700; color: #f87171; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                    🏛️ NWS Sioux Falls Official Detailed Telemetry • {selected_record['day']}
-                </div>
-                <div style="font-size: 0.88rem; color: #f4f4f5; margin-bottom: 6px; line-height: 1.5;">
-                    <strong>Forecast Details:</strong> {selected_record['detailed']}
-                </div>
-                {f'<div style="font-size: 0.88rem; color: #d4d4d8; margin-bottom: 8px; line-height: 1.5;"><strong>Extended Night Telemetry:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
-                <div style="display: flex; gap: 16px; margin-top: 10px; font-size: 0.82rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 8px;">
-                    <div>🌡️ High: <strong style="color: #fafafa;">{extracted_high}</strong></div>
-                    <div>🌡️ Low: <strong style="color: #fafafa;">{extracted_low}</strong></div>
-                    <div>💨 Wind Vector: <strong style="color: #fafafa;">{selected_record['wind_speed']} ({selected_record['wind_dir']})</strong></div>
-                    <div>📡 Station: <strong style="color: #fafafa;">NWS Sioux Falls (KFSD)</strong></div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, height=160, scrolling=False)
 
         except Exception as e:
             st.error(f"Could not load NWS forecast telemetry: {e}")

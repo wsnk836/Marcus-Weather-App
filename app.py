@@ -13,9 +13,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- BROWSER LOCALSTORAGE BRIDGE (PERSISTS ACROSS APP CLOSURES) ---
-# This script checks if query params exist in the URL. If so, it saves them to browser localStorage.
-# If the URL is clean (user reopened the base app), it automatically restores them from localStorage.
+# --- BROWSER LOCALSTORAGE BRIDGE (FIXED FOR MOBILE PWA / STANDALONE APPS) ---
+# Uses window.top to break out of the iframe sandbox and redirect the main app window.
 localStorage_sync_code = """
 <script>
     const urlParams = new URLSearchParams(window.location.search);
@@ -39,7 +38,7 @@ localStorage_sync_code = """
             const push = savedPush || 'false';
             
             const newUrl = window.location.pathname + `?lat=${lat}&lon=${lon}&loc_name=${encodeURIComponent(loc)}&push_notifications=${push}`;
-            window.location.replace(newUrl);
+            window.top.location.replace(newUrl);
         }
     }
 </script>
@@ -223,7 +222,6 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
               st.session_state.push_enabled
           ).lower()
 
-          # Also push update immediately via JS to local storage
           update_js = f"""
                     <script>
                         localStorage.setItem('nws_lat', '{new_lat}');
@@ -257,7 +255,6 @@ with st.expander("🔔 Push Notifications Settings", expanded=False):
     st.query_params["lon"] = str(ACTIVE_LON)
     st.query_params["loc_name"] = location_name
 
-    # Immediate browser storage sync via script injection
     sync_script = f"""
         <script>
             localStorage.setItem('nws_push', '{str(val).lower()}');
@@ -280,7 +277,7 @@ with st.expander("🔔 Push Notifications Settings", expanded=False):
         f"""
         <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-left: 3px solid #10b981; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; color: #d1fae5; margin-top: 8px;">
             🟢 <strong>Status: Active & Permanently Saved</strong><br/>
-            Your choice is stored in browser local storage for coordinates <strong>({ACTIVE_LAT}, {ACTIVE_LON})</strong>. Even if you close the app or browser tab, reopening it will restore this setting automatically.
+            Your choice is stored in browser local storage for coordinates <strong>({ACTIVE_LAT}, {ACTIVE_LON})</strong>. Closing the app or reopening from your phone's home screen shortcut will restore this setting automatically.
         </div>
         """,
         unsafe_allow_html=True,
@@ -619,7 +616,8 @@ with st.form("native_feedback_form"):
   )
 
   if fb_submitted:
-    if not fb_name.name.strip() if hasattr(fb_name, 'name') else not fb_name.strip() or not fb_msg.strip():
+    name_val = fb_name if isinstance(fb_name, str) else ""
+    if not name_val.strip() or not fb_msg.strip():
       st.error("Please fill out both your name and message before submitting.")
     else:
       try:
@@ -628,7 +626,7 @@ with st.form("native_feedback_form"):
             "subject": (
                 "💡 Community Feedback and Suggestions from Marcus Command"
             ),
-            "name": fb_name,
+            "name": name_val,
             "location": fb_loc,
             "message": fb_msg,
         }

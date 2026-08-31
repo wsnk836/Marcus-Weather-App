@@ -178,12 +178,12 @@ lon_str = query_params.get("lon", default_lon)
 location_name = query_params.get("loc_name", "Marcus, IA")
 
 try:
-  ACTIVE_LAT = round(float(lat_str), 4)
-  ACTIVE_LON = round(float(lon_str), 4)
+    ACTIVE_LAT = round(float(lat_str), 4)
+    ACTIVE_LON = round(float(lon_str), 4)
 except ValueError:
-  ACTIVE_LAT = float(default_lat)
-  ACTIVE_LON = float(default_lon)
-  location_name = "Marcus, IA"
+    ACTIVE_LAT = float(default_lat)
+    ACTIVE_LON = float(default_lon)
+    location_name = "Marcus, IA"
 
 # --- HERO HEADER ---
 st.markdown(
@@ -200,31 +200,31 @@ st.markdown(
 # --- ZIP CODE & LOCATION SELECTOR PANEL ---
 # ==========================================
 with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=False):
-  with st.form("zip_search_form"):
-    loc_input = st.text_input(
-        "ZIP Code or City",
-        placeholder="e.g. 51035 or Cherokee, IA",
-        value="" if location_name == "Marcus, IA" else location_name,
-    )
-    submitted = st.form_submit_button("Update Location Grid")
+    with st.form("zip_search_form"):
+        loc_input = st.text_input(
+            "ZIP Code or City",
+            placeholder="e.g. 51035 or Cherokee, IA",
+            value="" if location_name == "Marcus, IA" else location_name,
+        )
+        submitted = st.form_submit_button("Update Location Grid")
 
-    if submitted and loc_input.strip():
-      try:
-        geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(loc_input)}&format=json&countrycodes=us&limit=1"
-        geo_resp = requests.get(
-            geo_url, headers={"User-Agent": "MarcusWeatherApp"}, timeout=5
-        ).json()
+        if submitted and loc_input.strip():
+            try:
+                geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(loc_input)}&format=json&countrycodes=us&limit=1"
+                geo_resp = requests.get(
+                    geo_url, headers={"User-Agent": "MarcusWeatherApp"}, timeout=5
+                ).json()
 
-        if geo_resp:
-          new_lat = geo_resp[0]["lat"]
-          new_lon = geo_resp[0]["lon"]
-          new_name = geo_resp[0].get("display_name", loc_input).split(",")[0]
+                if geo_resp:
+                    new_lat = geo_resp[0]["lat"]
+                    new_lon = geo_resp[0]["lon"]
+                    new_name = geo_resp[0].get("display_name", loc_input).split(",")[0]
 
-          st.query_params["lat"] = new_lat
-          st.query_params["lon"] = new_lon
-          st.query_params["loc_name"] = new_name
+                    st.query_params["lat"] = new_lat
+                    st.query_params["lon"] = new_lon
+                    st.query_params["loc_name"] = new_name
 
-          update_js = f"""
+                    update_js = f"""
                     <script>
                         localStorage.setItem('nws_lat', '{new_lat}');
                         localStorage.setItem('nws_lon', '{new_lon}');
@@ -232,17 +232,17 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
                         sessionStorage.setItem('nws_synced', 'true');
                     </script>
                     """
-          components.html(update_js, height=0)
+                    components.html(update_js, height=0)
 
-          st.success(f"Location locked to: {geo_resp[0].get('display_name')}")
-          time.sleep(0.5)
-          st.rerun()
-        else:
-          st.error(
-              "Location not found. Please try a valid US ZIP code or city name."
-          )
-      except Exception as e:
-        st.error(f"Geocoding connection error: {e}")
+                    st.success(f"Location locked to: {geo_resp[0].get('display_name')}")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error(
+                        "Location not found. Please try a valid US ZIP code or city name."
+                    )
+            except Exception as e:
+                st.error(f"Geocoding connection error: {e}")
 
 
 # ==========================================
@@ -250,301 +250,398 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
 # ==========================================
 @st.fragment(run_every=60)
 def load_live_weather(lat, lon, loc_label):
-  headers = {
-      "User-Agent": "MarcusWeatherApp (wsnk836@gmail.com)",
-      "Accept": "application/geo+json",
-  }
+    headers = {
+        "User-Agent": "MarcusWeatherApp (wsnk836@gmail.com)",
+        "Accept": "application/geo+json",
+    }
 
-  if "selected_forecast_day" not in st.session_state:
-    st.session_state.selected_forecast_day = None
+    if "selected_forecast_day" not in st.session_state:
+        st.session_state.selected_forecast_day = None
 
-  radar_station = "KFSD"
+    radar_station = "KFSD"
 
-  # --- ACTIVE SEVERE WEATHER ALERTS ---
-  st.subheader(f"⚠️ Active NWS Weather Alerts ({loc_label})")
+    # --- ACTIVE SEVERE WEATHER ALERTS ---
+    st.subheader(f"⚠️ Active NWS Weather Alerts ({loc_label})")
 
-  try:
-    alerts_url = f"https://api.weather.gov/alerts/active?point={lat},{lon}"
-    alerts_response = requests.get(alerts_url, headers=headers, timeout=10).json()
-    alerts = alerts_response.get("features", [])
+    try:
+        alerts_url = f"https://api.weather.gov/alerts/active?point={lat},{lon}"
+        alerts_response = requests.get(alerts_url, headers=headers, timeout=10).json()
+        alerts = alerts_response.get("features", [])
 
-    if len(alerts) > 0:
-      for alert in alerts:
-        props = alert.get("properties", {})
-        event = props.get("event", "Weather Alert")
-        headline = props.get("headline", "Severe weather alert issued.")
-        description = props.get("description", "No description provided.")
-        severity = props.get("severity", "Unknown")
-        status_color = (
-            "#ef4444" if severity in ["Extreme", "Severe"] else "#f87171"
-        )
+        if len(alerts) > 0:
+            for alert in alerts:
+                props = alert.get("properties", {})
+                event = props.get("event", "Weather Alert")
+                headline = props.get("headline", "Severe weather alert issued.")
+                description = props.get("description", "No description provided.")
+                severity = props.get("severity", "Unknown")
+                status_color = (
+                    "#ef4444" if severity in ["Extreme", "Severe"] else "#f87171"
+                )
 
-        st.markdown(
-            f"""
-                <div class="alert-card-severe" style="border-left-color: {status_color};">
-                    <strong style="color: {status_color};">🚨 {event}</strong><br/>
-                    <span style="color: #f4f4f5; font-size: 0.9rem; margin-top: 4px; display: block;">{headline}</span>
+                st.markdown(
+                    f"""
+                    <div class="alert-card-severe" style="border-left-color: {status_color};">
+                        <strong style="color: {status_color};">🚨 {event}</strong><br/>
+                        <span style="color: #f4f4f5; font-size: 0.9rem; margin-top: 4px; display: block;">{headline}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                with st.expander("📄 View Full Warning Statement"):
+                    st.write(description)
+        else:
+            st.markdown(
+                f"""
+                <div class="alert-card-clear">
+                    🟢 <strong>All Clear:</strong> No active warnings or advisories for {loc_label}.
                 </div>
                 """,
-            unsafe_allow_html=True,
-        )
-
-        with st.expander("📄 View Full Warning Statement"):
-          st.write(description)
-    else:
-      st.markdown(
-          f"""
-            <div class="alert-card-clear">
-                🟢 <strong>All Clear:</strong> No active warnings or advisories for {loc_label}.
-            </div>
-            """,
-          unsafe_allow_html=True,
-      )
-
-  except Exception as e:
-    st.error(f"Could not reach NWS alert servers: {e}")
-
-  st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
-
-  # --- TWO-COLUMN DASHBOARD LAYOUT ---
-  col_left, col_right = st.columns([1.1, 1], gap="large")
-
-  with col_left:
-    # --- CURRENT CONDITIONS & METRICS ---
-    st.subheader(f"🌦️ Current Conditions ({loc_label})")
-    try:
-      points_url = f"https://api.weather.gov/points/{lat},{lon}"
-      points_res = requests.get(points_url, headers=headers, timeout=10)
-
-      if points_res.status_code != 200:
-        st.error(
-            f"NWS Grid Server error (Code {points_res.status_code}). Try a"
-            " nearby ZIP code."
-        )
-        return
-
-      points_response = points_res.json()
-      if "properties" not in points_response:
-        st.error("Received malformed data telemetry from NWS servers.")
-        return
-
-      radar_station = points_response["properties"].get("radarStation", "KFSD")
-
-      forecast_url = points_response["properties"].get("forecast")
-      if not forecast_url:
-        st.error("Could not resolve forecast URL for this specific coordinate zone.")
-        return
-
-      forecast_res = requests.get(forecast_url, headers=headers, timeout=10)
-      if forecast_res.status_code != 200:
-        st.error("Could not reach NWS forecast servers.")
-        return
-
-      forecast_response = forecast_res.json()
-      if "properties" not in forecast_response:
-        st.error("Forecast data stream currently unavailable.")
-        return
-
-      periods = forecast_response["properties"]["periods"]
-      current = periods[0]
-
-      m1, m2, m3 = st.columns(3)
-      with m1:
-        st.metric(
-            "🌡️ Temp", f"{current['temperature']}°{current['temperatureUnit']}"
-        )
-      with m2:
-        st.metric("💨 Wind", f"{current['windSpeed']}")
-      with m3:
-        st.metric("☁️ Sky", current["shortForecast"])
-
-      st.markdown(
-          f"""
-            <div style="background: #121316; border: 1px solid #27272a; border-radius: 10px; padding: 10px 14px; margin: 10px 0 15px 0; color: #d4d4d8; font-size: 0.88rem;">
-                <strong>📋 Summary:</strong> {current['detailedForecast']}
-            </div>
-            """,
-          unsafe_allow_html=True,
-      )
-
-      daily_forecasts = []
-      i = 0
-      while i < len(periods):
-        p = periods[i]
-        if p["isDaytime"]:
-          day_name = p["name"]
-          day_detailed = p["detailedForecast"]
-          high_temp = f"{p['temperature']}°{p['temperatureUnit']}"
-          wind_speed = p["windSpeed"]
-          wind_dir = p.get("windDirection", "")
-
-          low_temp = "N/A"
-          night_detailed = ""
-
-          if i + 1 < len(periods) and not periods[i + 1]["isDaytime"]:
-            night_p = periods[i + 1]
-            low_temp = f"{night_p['temperature']}°{night_p['temperatureUnit']}"
-            night_detailed = night_p["detailedForecast"]
-            i += 1
-
-          daily_forecasts.append({
-              "day": day_name,
-              "high": high_temp,
-              "low": low_temp,
-              "detailed": day_detailed,
-              "low_detailed": night_detailed,
-              "wind_speed": wind_speed,
-              "wind_dir": wind_dir,
-          })
-        else:
-          night_name = p["name"]
-          day_label = (
-              "Today"
-              if night_name.lower() == "tonight"
-              else night_name.replace(" Night", "").strip()
-          )
-
-          low_temp = f"{p['temperature']}°{p['temperatureUnit']}"
-          night_detailed = p["detailedForecast"]
-          wind_speed = p["windSpeed"]
-          wind_dir = p.get("windDirection", "")
-
-          high_temp = "N/A"
-          day_detailed = ""
-          if i + 1 < len(periods) and periods[i + 1]["isDaytime"]:
-            day_p = periods[i + 1]
-            high_temp = f"{day_p['temperature']}°{day_p['temperatureUnit']}"
-            day_detailed = day_p["detailedForecast"]
-            i += 1
-
-          daily_forecasts.append({
-              "day": day_label,
-              "high": high_temp,
-              "low": low_temp,
-              "detailed": day_detailed,
-              "low_detailed": night_detailed,
-              "wind_speed": wind_speed,
-              "wind_dir": wind_dir,
-          })
-        i += 1
-
-      if (
-          not st.session_state.selected_forecast_day
-          or st.session_state.selected_forecast_day
-          not in [d["day"] for d in daily_forecasts]
-      ):
-        st.session_state.selected_forecast_day = daily_forecasts[0]["day"]
-
-      st.subheader("📅 Outlook")
-      tab3, tab7 = st.tabs(["3-Day", "7-Day"])
-
-      with tab3:
-        days_to_show_3 = daily_forecasts[:3]
-        cols3 = st.columns(len(days_to_show_3))
-        for idx, d_item in enumerate(days_to_show_3):
-          with cols3[idx]:
-            is_selected = d_item["day"] == st.session_state.selected_forecast_day
-            btn_label = f"📍 {d_item['day']}" if is_selected else d_item["day"]
-            if st.button(
-                btn_label, key=f"btn_3d_{idx}_{d_item['day']}", use_container_width=True
-            ):
-              st.session_state.selected_forecast_day = d_item["day"]
-              st.rerun()
-
-      with tab7:
-        days_to_show_7 = daily_forecasts[:7]
-        cols7 = st.columns(len(days_to_show_7))
-        for idx, d_item in enumerate(days_to_show_7):
-          with cols7[idx]:
-            is_selected = d_item["day"] == st.session_state.selected_forecast_day
-            btn_label = f"📍 {d_item['day']}" if is_selected else d_item["day"]
-            if st.button(
-                btn_label, key=f"btn_7d_{idx}_{d_item['day']}", use_container_width=True
-            ):
-              st.session_state.selected_forecast_day = d_item["day"]
-              st.rerun()
-
-      selected_record = next(
-          (
-              d
-              for d in daily_forecasts
-              if d["day"] == st.session_state.selected_forecast_day
-          ),
-          daily_forecasts[0],
-      )
-
-      display_high = selected_record["high"]
-      display_low = selected_record["low"]
-      current_temp_str = f"{current['temperature']}°{current['temperatureUnit']}"
-      if display_high == "N/A":
-        display_high = current_temp_str
-      if display_low == "N/A":
-        display_low = current_temp_str
-
-      st.markdown(
-          f"""
-            <div style="background: #18191f; border: 1px solid #27272a; border-left: 3px solid #ef4444; border-radius: 10px; padding: 18px 20px; margin-top: 15px;">
-                <div style="font-weight: 700; color: #f87171; font-size: 1.05rem; margin-bottom: 10px;">
-                    🏛️ Full NWS Forecast Report • {selected_record['day']}
-                </div>
-                {f'<div style="font-size: 0.92rem; color: #f4f4f5; margin-bottom: 8px; line-height: 1.6;"><strong>Daytime Forecast:</strong> {selected_record["detailed"]}</div>' if selected_record['detailed'] else ''}
-                {f'<div style="font-size: 0.92rem; color: #d4d4d8; margin-bottom: 12px; line-height: 1.6;"><strong>Nighttime Forecast:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
-                <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 0.85rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 10px;">
-                    <div>🌡️ High: <strong style="color: #fafafa;">{display_high}</strong></div>
-                    <div>🌡️ Low: <strong style="color: #fafafa;">{display_low}</strong></div>
-                    <div>💨 Wind: <strong style="color: #fafafa;">{selected_record['wind_speed']} ({selected_record['wind_dir']})</strong></div>
-                </div>
-            </div>
-            """,
-          unsafe_allow_html=True,
-      )
+                unsafe_allow_html=True,
+            )
 
     except Exception as e:
-      st.error(f"Could not load NWS forecast telemetry: {e}")
+        st.error(f"Could not reach NWS alert servers: {e}")
 
     st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
 
-    # --- LIVE RADAR LOOP ---
-    st.subheader(f"📡 Live Doppler Radar Loop ({radar_station})")
-    cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime(
-        "%I:%M:%S %p %Z"
-    )
-    st.caption(f"🔄 Sync active • {cst_time} • Station: {radar_station}")
-    radar_url = f"https://radar.weather.gov/ridge/standard/{radar_station}_loop.gif?t={int(time.time())}"
-    with st.container(border=True):
-      st.image(radar_url, use_container_width=True)
+    # --- TWO-COLUMN DASHBOARD LAYOUT ---
+    col_left, col_right = st.columns([1.1, 1], gap="large")
 
-  with col_right:
-    st.markdown(
-        f"""
-        <div class="command-card welcome-card">
-            👋 <strong>Welcome to Marcus Weather Command.</strong> Currently monitoring regional grid coordinates <strong>{loc_label}</strong>.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    with col_left:
+        # --- CURRENT CONDITIONS & METRICS ---
+        st.subheader(f"🌦️ Current Conditions ({loc_label})")
+        try:
+            points_url = f"https://api.weather.gov/points/{lat},{lon}"
+            points_res = requests.get(points_url, headers=headers, timeout=10)
 
-    st.subheader("📻 Community News")
-    st.markdown(
-        """
-        <div class="command-card repeater-card">
-            <strong>GMRS REPEATER GOING ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            if points_res.status_code != 200:
+                st.error(
+                    f"NWS Grid Server error (Code {points_res.status_code}). Try a"
+                    " nearby ZIP code."
+                )
+                return
 
-    st.subheader("📲 Install")
-    st.markdown(
-        """
-        <div class="command-card install-card">
-            <strong>Add to Home Screen:</strong><br/>
-            • <strong>iOS (Safari):</strong> Tap <strong>Share</strong> ➔ <strong>"Add to Home Screen"</strong>.<br/>
-            • <strong>Android (Chrome):</strong> Tap <strong>Menu (⋮)</strong> ➔ <strong>"Add to Home screen"</strong>.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            points_response = points_res.json()
+            if "properties" not in points_response:
+                st.error("Received malformed data telemetry from NWS servers.")
+                return
+
+            radar_station = points_response["properties"].get("radarStation", "KFSD")
+
+            forecast_url = points_response["properties"].get("forecast")
+            if not forecast_url:
+                st.error("Could not resolve forecast URL for this specific coordinate zone.")
+                return
+
+            forecast_res = requests.get(forecast_url, headers=headers, timeout=10)
+            if forecast_res.status_code != 200:
+                st.error("Could not reach NWS forecast servers.")
+                return
+
+            forecast_response = forecast_res.json()
+            if "properties" not in forecast_response:
+                st.error("Forecast data stream currently unavailable.")
+                return
+
+            periods = forecast_response["properties"]["periods"]
+            current = periods[0]
+
+            m1, m2, m3 = st.columns(3)
+            with m1:
+                st.metric(
+                    "🌡️ Temp", f"{current['temperature']}°{current['temperatureUnit']}"
+                )
+            with m2:
+                st.metric("💨 Wind", f"{current['windSpeed']}")
+            with m3:
+                st.metric("☁️ Sky", current["shortForecast"])
+
+            st.markdown(
+                f"""
+                <div style="background: #121316; border: 1px solid #27272a; border-radius: 10px; padding: 10px 14px; margin: 10px 0 15px 0; color: #d4d4d8; font-size: 0.88rem;">
+                    <strong>📋 Summary:</strong> {current['detailedForecast']}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            daily_forecasts = []
+            i = 0
+            while i < len(periods):
+                p = periods[i]
+                if p["isDaytime"]:
+                    day_name = p["name"]
+                    day_detailed = p["detailedForecast"]
+                    high_temp = f"{p['temperature']}°{p['temperatureUnit']}"
+                    wind_speed = p["windSpeed"]
+                    wind_dir = p.get("windDirection", "")
+
+                    low_temp = "N/A"
+                    night_detailed = ""
+
+                    if i + 1 < len(periods) and not periods[i + 1]["isDaytime"]:
+                        night_p = periods[i + 1]
+                        low_temp = f"{night_p['temperature']}°{night_p['temperatureUnit']}"
+                        night_detailed = night_p["detailedForecast"]
+                        i += 1
+
+                    daily_forecasts.append({
+                        "day": day_name,
+                        "high": high_temp,
+                        "low": low_temp,
+                        "detailed": day_detailed,
+                        "low_detailed": night_detailed,
+                        "wind_speed": wind_speed,
+                        "wind_dir": wind_dir,
+                    })
+                else:
+                    night_name = p["name"]
+                    day_label = (
+                        "Today"
+                        if night_name.lower() == "tonight"
+                        else night_name.replace(" Night", "").strip()
+                    )
+
+                    low_temp = f"{p['temperature']}°{p['temperatureUnit']}"
+                    night_detailed = p["detailedForecast"]
+                    wind_speed = p["windSpeed"]
+                    wind_dir = p.get("windDirection", "")
+
+                    high_temp = "N/A"
+                    day_detailed = ""
+                    if i + 1 < len(periods) and periods[i + 1]["isDaytime"]:
+                        day_p = periods[i + 1]
+                        high_temp = f"{day_p['temperature']}°{day_p['temperatureUnit']}"
+                        day_detailed = day_p["detailedForecast"]
+                        i += 1
+
+                    daily_forecasts.append({
+                        "day": day_label,
+                        "high": high_temp,
+                        "low": low_temp,
+                        "detailed": day_detailed,
+                        "low_detailed": night_detailed,
+                        "wind_speed": wind_speed,
+                        "wind_dir": wind_dir,
+                    })
+                i += 1
+
+            if (
+                not st.session_state.selected_forecast_day
+                or st.session_state.selected_forecast_day
+                not in [d["day"] for d in daily_forecasts]
+            ):
+                st.session_state.selected_forecast_day = daily_forecasts[0]["day"]
+
+            st.subheader("📅 Outlook")
+            tab3, tab7 = st.tabs(["3-Day", "7-Day"])
+
+            with tab3:
+                days_to_show_3 = daily_forecasts[:3]
+                cols3 = st.columns(len(days_to_show_3))
+                for idx, d_item in enumerate(days_to_show_3):
+                    with cols3[idx]:
+                        is_selected = d_item["day"] == st.session_state.selected_forecast_day
+                        btn_label = f"📍 {d_item['day']}" if is_selected else d_item["day"]
+                        if st.button(
+                            btn_label, key=f"btn_3d_{idx}_{d_item['day']}", use_container_width=True
+                        ):
+                            st.session_state.selected_forecast_day = d_item["day"]
+                            st.rerun()
+
+            with tab7:
+                days_to_show_7 = daily_forecasts[:7]
+                cols7 = st.columns(len(days_to_show_7))
+                for idx, d_item in enumerate(days_to_show_7):
+                    with cols7[idx]:
+                        is_selected = d_item["day"] == st.session_state.selected_forecast_day
+                        btn_label = f"📍 {d_item['day']}" if is_selected else d_item["day"]
+                        if st.button(
+                            btn_label, key=f"btn_7d_{idx}_{d_item['day']}", use_container_width=True
+                        ):
+                            st.session_state.selected_forecast_day = d_item["day"]
+                            st.rerun()
+
+            selected_record = next(
+                (
+                    d
+                    for d in daily_forecasts
+                    if d["day"] == st.session_state.selected_forecast_day
+                ),
+                daily_forecasts[0],
+            )
+
+            display_high = selected_record["high"]
+            display_low = selected_record["low"]
+            current_temp_str = f"{current['temperature']}°{current['temperatureUnit']}"
+            if display_high == "N/A":
+                display_high = current_temp_str
+            if display_low == "N/A":
+                display_low = current_temp_str
+
+            st.markdown(
+                f"""
+                <div style="background: #18191f; border: 1px solid #27272a; border-left: 3px solid #ef4444; border-radius: 10px; padding: 18px 20px; margin-top: 15px;">
+                    <div style="font-weight: 700; color: #f87171; font-size: 1.05rem; margin-bottom: 10px;">
+                        🏛️ Full NWS Forecast Report • {selected_record['day']}
+                    </div>
+                    {f'<div style="font-size: 0.92rem; color: #f4f4f5; margin-bottom: 8px; line-height: 1.6;"><strong>Daytime Forecast:</strong> {selected_record["detailed"]}</div>' if selected_record['detailed'] else ''}
+                    {f'<div style="font-size: 0.92rem; color: #d4d4d8; margin-bottom: 12px; line-height: 1.6;"><strong>Nighttime Forecast:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
+                    <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 0.85rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 10px;">
+                        <div>🌡️ High: <strong style="color: #fafafa;">{display_high}</strong></div>
+                        <div>🌡️ Low: <strong style="color: #fafafa;">{display_low}</strong></div>
+                        <div>💨 Wind: <strong style="color: #fafafa;">{selected_record['wind_speed']} ({selected_record['wind_dir']})</strong></div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        except Exception as e:
+            st.error(f"Could not reach NWS forecast telemetry: {e}")
+
+        st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
+
+        # --- LIVE RADAR LOOP ---
+        st.subheader(f"📡 Live Doppler Radar Loop ({radar_station})")
+        cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime(
+            "%I:%M:%S %p %Z"
+        )
+        st.caption(f"🔄 Sync active • {cst_time} • Station: {radar_station}")
+        radar_url = f"https://radar.weather.gov/ridge/standard/{radar_station}_loop.gif?t={int(time.time())}"
+        with st.container(border=True):
+            st.image(radar_url, use_container_width=True)
+
+    with col_right:
+        st.markdown(
+            f"""
+            <div class="command-card welcome-card">
+                👋 <strong>Welcome to Marcus Weather Command.</strong> Currently monitoring regional grid coordinates <strong>{loc_label}</strong>.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.subheader("📻 Community News")
+        st.markdown(
+            """
+            <div class="command-card repeater-card">
+                <strong>GMRS REPEATER GOING ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # ==========================================
+        # --- COMMUNITY ANNOUNCEMENTS BOARD ---
+        # ==========================================
+        st.subheader("📢 Community Announcements Board")
+
+        if "community_announcements" not in st.session_state:
+            st.session_state.community_announcements = [
+                {
+                    "id": "default_1",
+                    "author": "Dashboard Admin",
+                    "title": "Welcome to the Community Board",
+                    "text": "Feel free to post local notices and announcements using the submission form below.",
+                    "time": "Active"
+                }
+            ]
+
+        if "is_admin" not in st.session_state:
+            st.session_state.is_admin = False
+
+        # Display announcements with admin delete option if logged in
+        for idx, ann in enumerate(st.session_state.community_announcements):
+            st.markdown(
+                f"""
+                <div style="background: #121316; border: 1px solid #27272a; border-left: 4px solid #38bdf8; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;">
+                    <strong style="font-size: 0.95rem; color: #f4f4f5;">{ann['title']}</strong><br/>
+                    <span style="font-size: 0.88rem; color: #d4d4d8; display: block; margin-top: 4px;">{ann['text']}</span>
+                    <span style="font-size: 0.75rem; color: #a1a1aa; display: block; margin-top: 6px; font-style: italic;">Posted by: {ann['author']}</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.session_state.is_admin:
+                if st.button(f"🗑️ Delete Notice: {ann['title']}", key=f"del_ann_{ann.get('id', idx)}"):
+                    st.session_state.community_announcements.pop(idx)
+                    st.success("Announcement deleted successfully.")
+                    st.rerun()
+
+        # Submission form for community announcements
+        with st.form("community_announcement_form"):
+            st.write("**Post a New Announcement**")
+            ann_name = st.text_input("Your Name *", placeholder="Your Name")
+            ann_email = st.text_input("Email * (Required, kept hidden)", type="default", placeholder="your.email@example.com")
+            ann_title = st.text_input("Announcement Title *", placeholder="e.g., Neighborhood Garage Sale")
+            ann_text = st.text_area("Announcement Details *", placeholder="Enter your announcement details...")
+            
+            ann_submitted = st.form_submit_button("Publish Announcement", use_container_width=True)
+            
+            if ann_submitted:
+                if not ann_name.strip() or not ann_email.strip() or not ann_title.strip() or not ann_text.strip():
+                    st.error("Please fill out all required fields, including your email.")
+                else:
+                    # Add to session state for the app feed
+                    new_ann_id = f"ann_{int(time.time())}"
+                    st.session_state.community_announcements.insert(
+                        0,
+                        {
+                            "id": new_ann_id,
+                            "author": ann_name.strip(),
+                            "title": ann_title.strip(),
+                            "text": ann_text.strip(),
+                            "time": "Just now"
+                        }
+                    )
+
+                    # Send to Web3Forms (delivers to app dashboard & wsnk836@gmail.com)
+                    try:
+                        payload = {
+                            "access_key": "6f59571f-f519-4655-9b50-095eed178152",
+                            "subject": f"📢 New Community Announcement: {ann_title.strip()}",
+                            "name": ann_name.strip(),
+                            "email": ann_email.strip(),
+                            "message": f"Title: {ann_title.strip()}\n\nDetails:\n{ann_text.strip()}"
+                        }
+                        requests.post("https://api.web3forms.com/submit", json=payload, timeout=5)
+                    except Exception:
+                        pass
+
+                    st.success("Announcement published successfully and submitted for distribution!")
+                    st.rerun()
+
+        # Admin Login Expander
+        with st.expander("🔐 Admin Control Panel", expanded=False):
+            if not st.session_state.is_admin:
+                pass_input = st.text_input("Enter 6-Digit Admin Passcode", type="password", max_chars=6)
+                if st.button("Login as Admin"):
+                    if pass_input == "052723":
+                        st.session_state.is_admin = True
+                        st.success("Admin access granted!")
+                        st.rerun()
+                    else:
+                        st.error("Incorrect passcode.")
+            else:
+                st.success("Admin mode is currently active.")
+                if st.button("Log Out Admin"):
+                    st.session_state.is_admin = False
+                    st.rerun()
+
+        st.subheader("📲 Install")
+        st.markdown(
+            """
+            <div class="command-card install-card">
+                <strong>Add to Home Screen:</strong><br/>
+                • <strong>iOS (Safari):</strong> Tap <strong>Share</strong> ➔ <strong>"Add to Home Screen"</strong>.<br/>
+                • <strong>Android (Chrome):</strong> Tap <strong>Menu (⋮)</strong> ➔ <strong>"Add to Home screen"</strong>.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 load_live_weather(ACTIVE_LAT, ACTIVE_LON, location_name)
@@ -556,42 +653,42 @@ st.markdown("<div style='margin: 20px 0 10px 0;'></div>", unsafe_allow_html=True
 st.subheader("💬 Community Feedback and Suggestions")
 
 with st.form("native_feedback_form"):
-  fb_name = st.text_input("Name *", placeholder="Your Name")
-  fb_loc = st.text_input("Location / Grid (Optional)", placeholder="Marcus, IA")
-  fb_msg = st.text_area(
-      "Your Feedback and Suggestions *",
-      placeholder="Enter your feedback or suggestions here...",
-  )
-  fb_submitted = st.form_submit_button(
-      "Send Feedback", use_container_width=True
-  )
+    fb_name = st.text_input("Name *", placeholder="Your Name")
+    fb_loc = st.text_input("Location / Grid (Optional)", placeholder="Marcus, IA")
+    fb_msg = st.text_area(
+        "Your Feedback and Suggestions *",
+        placeholder="Enter your feedback or suggestions here...",
+    )
+    fb_submitted = st.form_submit_button(
+        "Send Feedback", use_container_width=True
+    )
 
-  if fb_submitted:
-    name_val = fb_name if isinstance(fb_name, str) else ""
-    if not name_val.strip() or not fb_msg.strip():
-      st.error("Please fill out both your name and message before submitting.")
-    else:
-      try:
-        payload = {
-            "access_key": "6f59571f-f519-4655-9b50-095eed178152",
-            "subject": (
-                "💡 Community Feedback and Suggestions from Marcus Command"
-            ),
-            "name": name_val,
-            "location": fb_loc,
-            "message": fb_msg,
-        }
-        res = requests.post(
-            "https://api.web3forms.com/submit", json=payload, timeout=5
-        )
-        if res.status_code == 200:
-          st.success(
-              "✅ Feedback and suggestions sent directly to wsnk836@gmail.com!"
-          )
+    if fb_submitted:
+        name_val = fb_name if isinstance(fb_name, str) else ""
+        if not name_val.strip() or not fb_msg.strip():
+            st.error("Please fill out both your name and message before submitting.")
         else:
-          st.error("Server responded with an error. Please try again later.")
-      except Exception as e:
-        st.error(f"Network connection error: {e}")
+            try:
+                payload = {
+                    "access_key": "6f59571f-f519-4655-9b50-095eed178152",
+                    "subject": (
+                        "💡 Community Feedback and Suggestions from Marcus Command"
+                    ),
+                    "name": name_val,
+                    "location": fb_loc,
+                    "message": fb_msg,
+                }
+                res = requests.post(
+                    "https://api.web3forms.com/submit", json=payload, timeout=5
+                )
+                if res.status_code == 200:
+                    st.success(
+                        "✅ Feedback and suggestions sent directly to wsnk836@gmail.com!"
+                    )
+                else:
+                    st.error("Server responded with an error. Please try again later.")
+            except Exception as e:
+                st.error(f"Network connection error: {e}")
 
 # --- GITHUB REPOSITORY LINK FOOTER ---
 st.markdown(

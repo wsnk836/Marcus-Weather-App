@@ -3,6 +3,7 @@ import time
 from zoneinfo import ZoneInfo
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 # Page Configuration
 st.set_page_config(
@@ -11,6 +12,39 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+# --- BROWSER LOCALSTORAGE BRIDGE (PERSISTS ACROSS APP CLOSURES) ---
+# This script checks if query params exist in the URL. If so, it saves them to browser localStorage.
+# If the URL is clean (user reopened the base app), it automatically restores them from localStorage.
+localStorage_sync_code = """
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasParams = urlParams.has('lat') || urlParams.has('push_notifications');
+
+    if (hasParams) {
+        if (urlParams.has('lat')) localStorage.setItem('nws_lat', urlParams.get('lat'));
+        if (urlParams.has('lon')) localStorage.setItem('nws_lon', urlParams.get('lon'));
+        if (urlParams.has('loc_name')) localStorage.setItem('nws_loc_name', urlParams.get('loc_name'));
+        if (urlParams.has('push_notifications')) localStorage.setItem('nws_push', urlParams.get('push_notifications'));
+    } else {
+        const savedLat = localStorage.getItem('nws_lat');
+        const savedLon = localStorage.getItem('nws_lon');
+        const savedLoc = localStorage.getItem('nws_loc_name');
+        const savedPush = localStorage.getItem('nws_push');
+
+        if (savedLat || savedPush) {
+            const lat = savedLat || '42.8242';
+            const lon = savedLon || '-95.7994';
+            const loc = savedLoc || 'Marcus, IA';
+            const push = savedPush || 'false';
+            
+            const newUrl = window.location.pathname + `?lat=${lat}&lon=${lon}&loc_name=${encodeURIComponent(loc)}&push_notifications=${push}`;
+            window.location.replace(newUrl);
+        }
+    }
+</script>
+"""
+components.html(localStorage_sync_code, height=0)
 
 # --- TACTICAL CRIMSON & CARBON CSS ---
 st.markdown(
@@ -126,7 +160,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- RESOLVE & PERSIST QUERY PARAMS (REMEMBERED ACROSS APP CLOSURES) ---
+# --- RESOLVE & PERSIST QUERY PARAMS ---
 query_params = st.query_params
 default_lat = "42.8242"
 default_lon = "-95.7994"
@@ -134,8 +168,6 @@ default_lon = "-95.7994"
 lat_str = query_params.get("lat", default_lat)
 lon_str = query_params.get("lon", default_lon)
 location_name = query_params.get("loc_name", "Marcus, IA")
-
-# Persistent read of push notification preference from URL params
 push_param = query_params.get("push_notifications", "false").lower() == "true"
 
 try:
@@ -180,18 +212,29 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
         ).json()
 
         if geo_resp:
-          # Automatically preserves push_notifications status when switching locations
-          st.query_params["lat"] = geo_resp[0]["lat"]
-          st.query_params["lon"] = geo_resp[0]["lon"]
-          st.query_params["loc_name"] = geo_resp[0].get(
-              "display_name", loc_input
-          ).split(",")[0]
+          new_lat = geo_resp[0]["lat"]
+          new_lon = geo_resp[0]["lon"]
+          new_name = geo_resp[0].get("display_name", loc_input).split(",")[0]
+
+          st.query_params["lat"] = new_lat
+          st.query_params["lon"] = new_lon
+          st.query_params["loc_name"] = new_name
           st.query_params["push_notifications"] = str(
               st.session_state.push_enabled
           ).lower()
-          st.success(
-              f"Location locked to: {geo_resp[0].get('display_name')}"
-          )
+
+          # Also push update immediately via JS to local storage
+          update_js = f"""
+                    <script>
+                        localStorage.setItem('nws_lat', '{new_lat}');
+                        localStorage.setItem('nws_lon', '{new_lon}');
+                        localStorage.setItem('nws_loc_name', '{new_name}');
+                        localStorage.setItem('nws_push', '{str(st.session_state.push_enabled).lower()}');
+                    </script>
+                    """
+          components.html(update_js, height=0)
+
+          st.success(f"Location locked to: {geo_resp[0].get('display_name')}")
           time.sleep(0.5)
           st.rerun()
         else:
@@ -205,7 +248,7 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
 # --- PERSISTENT PUSH NOTIFICATIONS SETTINGS ---
 # ==========================================
 with st.expander("🔔 Push Notifications Settings", expanded=False):
-  # Use callback to immediately save selection to query parameters so closure remembers it
+
   def update_push_preference():
     val = st.session_state.push_notification_toggle_widget
     st.session_state.push_enabled = val
@@ -213,6 +256,17 @@ with st.expander("🔔 Push Notifications Settings", expanded=False):
     st.query_params["lat"] = str(ACTIVE_LAT)
     st.query_params["lon"] = str(ACTIVE_LON)
     st.query_params["loc_name"] = location_name
+
+    # Immediate browser storage sync via script injection
+    sync_script = f"""
+        <script>
+            localStorage.setItem('nws_push', '{str(val).lower()}');
+            localStorage.setItem('nws_lat', '{ACTIVE_LAT}');
+            localStorage.setItem('nws_lon', '{ACTIVE_LON}');
+            localStorage.setItem('nws_loc_name', '{location_name}');
+        </script>
+        """
+    components.html(sync_script, height=0)
 
   push_toggle = st.toggle(
       "Accept Background Push Notifications for Severe Weather Alerts",
@@ -225,8 +279,8 @@ with st.expander("🔔 Push Notifications Settings", expanded=False):
     st.markdown(
         f"""
         <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-left: 3px solid #10b981; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; color: #d1fae5; margin-top: 8px;">
-            🟢 <strong>Status: Active & Remembered</strong><br/>
-            Your preference is securely saved to your session link for coordinates <strong>({ACTIVE_LAT}, {ACTIVE_LON})</strong>. When active, NWS alerts are continuously tracked for this zone.
+            🟢 <strong>Status: Active & Permanently Saved</strong><br/>
+            Your choice is stored in browser local storage for coordinates <strong>({ACTIVE_LAT}, {ACTIVE_LON})</strong>. Even if you close the app or browser tab, reopening it will restore this setting automatically.
         </div>
         """,
         unsafe_allow_html=True,
@@ -235,8 +289,8 @@ with st.expander("🔔 Push Notifications Settings", expanded=False):
     st.markdown(
         """
         <div style="background: #121316; border: 1px solid #27272a; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; color: #a1a1aa; margin-top: 8px;">
-            ⚪ <strong>Status: Inactive / Declined</strong><br/>
-            Toggle on above to lock-in your push preference.
+            ⚪ <strong>Status: Inactive</strong><br/>
+            Toggle on above to lock-in your push preferences.
         </div>
         """,
         unsafe_allow_html=True,
@@ -315,7 +369,10 @@ def load_live_weather(lat, lon, loc_label):
       points_res = requests.get(points_url, headers=headers, timeout=10)
 
       if points_res.status_code != 200:
-        st.error(f"NWS Grid Server error (Code {points_res.status_code}). Try a nearby ZIP code.")
+        st.error(
+            f"NWS Grid Server error (Code {points_res.status_code}). Try a"
+            " nearby ZIP code."
+        )
         return
 
       points_response = points_res.json()
@@ -562,7 +619,7 @@ with st.form("native_feedback_form"):
   )
 
   if fb_submitted:
-    if not fb_name.strip() or not fb_msg.strip():
+    if not fb_name.name.strip() if hasattr(fb_name, 'name') else not fb_name.strip() or not fb_msg.strip():
       st.error("Please fill out both your name and message before submitting.")
     else:
       try:

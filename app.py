@@ -258,9 +258,9 @@ st.markdown("""
 # --- INSTALLATION INSTRUCTIONS ---
 st.markdown("""
 <div class="install-card">
-    📲 <strong>Add to Home Screen:</strong> Install this dashboard on your mobile device for quick, app-like access:<br/>
-    • <strong>iOS (Safari):</strong> Tap the <strong>Share</strong> button at the bottom of the screen, scroll down, and select <strong>"Add to Home Screen"</strong>.<br/>
-    • <strong>Android (Chrome):</strong> Tap the <strong>Menu</strong> (three vertical dots) in the top right, and select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.
+    📲 <strong>Add & Rename to Home Screen:</strong> Install this dashboard on your mobile device for quick, app-like access:<br/>
+    • <strong>iOS (Safari):</strong> Tap the <strong>Share</strong> button at the bottom of the screen, select <strong>"Add to Home Screen"</strong>, rename it to <strong>"Marcus Weather"</strong>, and tap <strong>Add</strong>.<br/>
+    • <strong>Android (Chrome):</strong> Tap the <strong>Menu</strong> (three vertical dots) in the top right, select <strong>"Add to Home screen"</strong> (or "Install app"), rename the shortcut to <strong>"Marcus Weather"</strong>, and confirm.
 </div>
 """, unsafe_allow_html=True)
 

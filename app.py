@@ -169,11 +169,12 @@ st.markdown("""
         color: #fafafa !important;
     }
 
-    /* Container Cards for Forecasts */
+    /* Container Cards for Forecasts - Optimized & Downsized */
     [data-testid="stVerticalBlockBorderWrapper"] {
         background: #121316 !important;
         border: 1px solid #27272a !important;
-        border-radius: 12px !important;
+        border-radius: 10px !important;
+        padding: 8px 10px !important;
         transition: all 0.2s ease-in-out;
     }
 
@@ -182,23 +183,31 @@ st.markdown("""
         transform: translateY(-2px);
     }
 
-    /* Forecast Icons Styling */
+    /* Downsized Forecast Icons & Text */
     .digital-icon-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        margin: 8px 0;
+        margin: 2px 0;
     }
     
     .digital-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 10px;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
         background: #18191f;
         border: 1px solid #27272a;
-        padding: 6px;
+        padding: 4px;
         object-fit: contain;
         display: block;
+    }
+
+    /* Shrink captions/text inside compact outlook cards */
+    [data-testid="stVerticalBlockBorderWrapper"] p, 
+    [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stCaptionContainer"] {
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
     }
 
     /* Tabs UI Polish */
@@ -209,11 +218,12 @@ st.markdown("""
 
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
-        padding: 6px 16px;
+        padding: 4px 12px;
         background-color: #121316;
         border: 1px solid #27272a;
         color: #a1a1aa;
         font-weight: 600;
+        font-size: 0.85rem;
     }
 
     .stTabs [aria-selected="true"] {
@@ -324,7 +334,7 @@ def load_live_weather():
     except Exception as e:
         st.error(f"Could not reach NWS alert servers: {e}")
 
-    st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
 
     # --- TWO-COLUMN DASHBOARD LAYOUT ---
     col_left, col_right = st.columns([1.1, 1], gap="large")
@@ -353,7 +363,7 @@ def load_live_weather():
                 st.metric("☁️ Sky", current['shortForecast'])
             
             st.markdown(f"""
-            <div style="background: #121316; border: 1px solid #27272a; border-radius: 10px; padding: 12px 16px; margin: 12px 0 20px 0; color: #d4d4d8; font-size: 0.92rem;">
+            <div style="background: #121316; border: 1px solid #27272a; border-radius: 10px; padding: 10px 14px; margin: 10px 0 15px 0; color: #d4d4d8; font-size: 0.88rem;">
                 <strong>📋 Summary:</strong> {current['detailedForecast']}
             </div>
             """, unsafe_allow_html=True)
@@ -372,7 +382,7 @@ def load_live_weather():
                     low = "N/A"
                     if i + 1 < len(periods) and not periods[i+1]['isDaytime']:
                         low = f"{periods[i+1]['temperature']}°{periods[i+1]['temperatureUnit']}"
-                        i += 1  
+                        i += 1 
                     
                     daily_forecasts.append({
                         "day": day_name, "high": high, "low": low,
@@ -389,12 +399,12 @@ def load_live_weather():
                     })
                 i += 1
 
-            # --- EXTENDED FORECAST TABS ---
+            # --- EXTENDED FORECAST TABS (Compact Layout) ---
             st.subheader("📅 Outlook")
             tab3, tab7 = st.tabs(["3-Day", "7-Day"])
             
             with tab3:
-                st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
+                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
                 days_to_show = daily_forecasts[:3]
                 cols3 = st.columns(len(days_to_show))
                 for idx, day_data in enumerate(days_to_show):
@@ -411,7 +421,7 @@ def load_live_weather():
                             st.caption(day_data['forecast'])
 
             with tab7:
-                st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
+                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
                 days_to_show = daily_forecasts[:7]
                 cols7 = st.columns(len(days_to_show))
                 for idx, day_data in enumerate(days_to_show):
@@ -430,7 +440,7 @@ def load_live_weather():
         except Exception as e:
             st.error(f"Could not load NWS forecast telemetry: {e}")
 
-        st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
 
         # --- LIVE RADAR LOOP ---
         st.markdown('<div id="radar-sec"></div>', unsafe_allow_html=True)
@@ -477,7 +487,7 @@ load_live_weather()
 # --- COMMUNITY FEEDBACK AND SUGGESTIONS HTML FORM ---
 # ==========================================
 st.markdown('<div id="feedback-sec"></div>', unsafe_allow_html=True)
-st.markdown("<div style='margin: 30px 0 15px 0;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='margin: 20px 0 10px 0;'></div>", unsafe_allow_html=True)
 st.subheader("💬 Community Feedback and Suggestions")
 st.markdown("<p style='color: #a1a1aa; font-size: 0.92rem;'>Send your feedback and suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
 
@@ -592,44 +602,4 @@ components.html("""
             result.style.color = "#a1a1aa";
             result.innerHTML = "Sending feedback...";
 
-            fetch('https://api.web3forms.com/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: json
-            })
-            .then(async (response) => {
-                let jsonResponse = await response.json();
-                if (response.status == 200) {
-                    result.style.color = "#10b981";
-                    result.innerHTML = "✅ Feedback and suggestions sent directly to wsnk836@gmail.com!";
-                    form.reset();
-                } else {
-                    result.style.color = "#ef4444";
-                    result.innerHTML = jsonResponse.message || "Something went wrong!";
-                }
-            })
-            .catch(error => {
-                result.style.color = "#ef4444";
-                result.innerHTML = "Network connection error!";
-            });
-        });
-    </script>
-</body>
-</html>
-""", height=270, scrolling=False)
-
-# ==========================================
-# --- GITHUB REPOSITORY LINK FOOTER ---
-# ==========================================
-st.markdown("""
-<div style="text-align: center; color: #71717a; font-size: 0.88rem; padding-top: 20px; padding-bottom: 15px;">
-    <hr style="border: none; border-top: 1px solid #27272a; margin-bottom: 15px;">
-    💻 Source code available on 
-    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #f87171; text-decoration: none; font-weight: 600;">
-        GitHub
-    </a>
-</div>
-""", unsafe_allow_html=True)
+            fetch('https://api.web3forms.com/submit',

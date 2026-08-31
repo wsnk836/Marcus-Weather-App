@@ -374,7 +374,7 @@ def load_live_weather():
 load_live_weather()
 
 # ==========================================
-# --- COMMUNITY FEEDBACK & DIRECT API EMAIL ---
+# --- COMMUNITY FEEDBACK & WEB3FORMS EMAIL ---
 # ==========================================
 st.markdown("<div style='margin: 40px 0 20px 0;'></div>", unsafe_allow_html=True)
 st.subheader("💬 Community Feedback & Station Log")
@@ -396,19 +396,20 @@ with st.form("feedback_form", clear_on_submit=True):
             loc_val = user_location.strip() if user_location else "Marcus, IA"
             
             payload = {
+                "access_key": "6f59571f-f519-4655-9b50-095eed178152",
+                "subject": f"🚨 Weather App Report from {name_val}",
                 "name": name_val,
                 "location": loc_val,
-                "message": user_message.strip(),
-                "_to": "wsnk836@gmail.com",
-                "_subject": f"🚨 Weather App Report from {name_val}"
+                "message": user_message.strip()
             }
             
             try:
-                response = requests.post("https://formsubmit.co/ajax/wsnk836@gmail.com", data=payload, timeout=10)
-                if response.status_code == 200:
+                response = requests.post("https://api.web3forms.com/submit", data=payload, timeout=10)
+                result = response.json()
+                if result.get("success"):
                     st.success("Feedback sent directly to wsnk836@gmail.com!")
                 else:
-                    st.error("Failed to send message via the mail gateway. Please try again later.")
+                    st.error(f"Failed to send message: {result.get('message', 'Unknown error')}")
             except Exception as e:
                 st.error(f"Network error while dispatching email: {e}")
         else:

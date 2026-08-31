@@ -1,5 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import requests
 import time
 
 # Page Configuration
@@ -190,13 +191,6 @@ components.html("""
 </script>
 """, height=0, width=0)
 
-# NWS API Headers
-headers = {
-    "User-Agent": "MarcusWeatherDashboard/1.0 (contact@example.com)",
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    "Pragma": "no-cache"
-}
-
 # --- HERO HEADER ---
 st.markdown("""
 <div class="hero-banner">
@@ -225,6 +219,11 @@ st.markdown("""
 # ==========================================
 @st.fragment(run_every=60)
 def load_live_weather():
+    # NWS API requires a unique User-Agent header with contact info per guidelines
+    headers = {
+        "User-Agent": "MarcusWeatherApp (wsnk836@gmail.com)",
+        "Accept": "application/geo+json"
+    }
 
     # --- ACTIVE SEVERE WEATHER ALERTS ---
     st.subheader("⚠️ Active NWS Weather Alerts")
@@ -259,8 +258,8 @@ def load_live_weather():
             </div>
             """, unsafe_allow_html=True)
             
-    except Exception:
-        st.error("Could not reach NWS alert servers. Retrying shortly...")
+    except Exception as e:
+        st.error(f"Could not reach NWS alert servers: {e}")
 
     st.markdown("<div style='margin: 25px 0;'></div>", unsafe_allow_html=True)
 
@@ -379,7 +378,6 @@ st.markdown("<div style='margin: 40px 0 20px 0;'></div>", unsafe_allow_html=True
 st.subheader("💬 Community Feedback & Station Log")
 st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Send local spotter reports or dashboard suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
 
-# Using Web3Forms client-side HTML component to bypass server IP restrictions completely
 components.html("""
 <!DOCTYPE html>
 <html>
@@ -471,8 +469,7 @@ components.html("""
             <textarea name="message" placeholder="Enter conditions or feedback here..." required></textarea>
         </div>
         
-        <!-- Honeypot spam protection -->
-        <input type="checkbox" name="botcheck" style="display: none;" style="display:none;">
+        <input type="checkbox" name="botcheck" style="display: none;">
 
         <button type="submit" id="submit-btn">Send to Command Email</button>
         <div id="result"></div>

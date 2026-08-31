@@ -182,7 +182,7 @@ st.markdown("""
         transform: translateY(-2px);
     }
 
-    /* Forecast Icons Styling - Expanded to Fit Column Width Fully */
+    /* Forecast Icons Styling - Expanded & Fully Expanded to Column Width */
     .digital-icon-container {
         display: flex;
         justify-content: center;
@@ -193,7 +193,7 @@ st.markdown("""
     
     .digital-icon {
         width: 100%;
-        max-width: 130px;
+        max-width: 140px;
         height: auto;
         aspect-ratio: 1 / 1;
         border-radius: 12px;
@@ -241,7 +241,7 @@ st.markdown("""
             font-size: 1.4rem;
         }
         .digital-icon {
-            max-width: 90px;
+            max-width: 100px;
         }
     }
 </style>
@@ -293,3 +293,43 @@ components.html("""
 def get_enhanced_icon_url(raw_url: str) -> str:
     """Upgrades NWS icon URL resolution to large format for maximum clarity."""
     if not raw_url:
+        return ""
+    if "?size=" in raw_url:
+        return raw_url.split("?")[0] + "?size=large"
+    elif "?" in raw_url:
+        return raw_url + "&size=large"
+    return raw_url + "?size=large"
+
+
+# ==========================================
+# --- CONTINUOUSLY REFRESHING FRAGMENT ---
+# ==========================================
+@st.fragment(run_every=60)
+def load_live_weather():
+    headers = {
+        "User-Agent": "MarcusWeatherApp (wsnk836@gmail.com)",
+        "Accept": "application/geo+json"
+    }
+
+    # --- ACTIVE SEVERE WEATHER ALERTS ---
+    st.markdown('<div id="alerts-sec"></div>', unsafe_allow_html=True)
+    st.subheader("⚠️ Active NWS Weather Alerts")
+    try:
+        alerts_url = "https://api.weather.gov/alerts/active?point=42.8242,-95.7994"
+        alerts_response = requests.get(alerts_url, headers=headers, timeout=10).json()
+        alerts = alerts_response.get("features", [])
+        
+        if len(alerts) > 0:
+            for alert in alerts:
+                props = alert.get("properties", {})
+                event = props.get("event", "Weather Alert")
+                headline = props.get("headline", "Severe weather alert issued.")
+                description = props.get("description", "No description provided.")
+                severity = props.get("severity", "Unknown")
+                
+                status_color = "#ef4444" if severity in ["Extreme", "Severe"] else "#f87171"
+                
+                st.markdown(f"""
+                <div class="alert-card-severe" style="border-left-color: {status_color};">
+                    <strong style="color: {status_color};">🚨 {event}</strong><br/>
+                    <span style="color: #f4f4f5

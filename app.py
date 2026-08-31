@@ -262,7 +262,8 @@ components.html("""
     <button class="quick-nav-btn" onclick="scrollToSec('alerts-sec')">⚠️ Alerts</button>
     <button class="quick-nav-btn" onclick="scrollToSec('conditions-sec')">🌦️ Conditions</button>
     <button class="quick-nav-btn" onclick="scrollToSec('radar-sec')">📡 Radar</button>
-    <button class="quick-nav-btn" onclick="scrollToSec('repeater-sec')">📻 GMRS & Install</button>
+    <button class="quick-nav-btn" onclick="scrollToSec('news-sec')">📻 Community News</button>
+    <button class="quick-nav-btn" onclick="scrollToSec('install-sec')">📲 Install</button>
     <button class="quick-nav-btn" onclick="scrollToSec('feedback-sec')">💬 Feedback</button>
 </div>
 <script>
@@ -448,17 +449,21 @@ def load_live_weather():
         </div>
         """, unsafe_allow_html=True)
 
-        # --- REPEATER ANNOUNCEMENT BANNER & INSTALLATION / RENAMING INSTRUCTIONS ---
-        st.markdown('<div id="repeater-sec"></div>', unsafe_allow_html=True)
+        # --- COMMUNITY NEWS SECTION ---
+        st.markdown('<div id="news-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📻 Community News")
         st.markdown("""
         <div class="command-card repeater-card">
-            <strong>📻 GMRS REPEATER ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
+            <strong>GMRS REPEATER ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
         </div>
         """, unsafe_allow_html=True)
 
+        # --- INSTALL SECTION ---
+        st.markdown('<div id="install-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📲 Install")
         st.markdown("""
         <div class="command-card install-card">
-            📲 <strong>Add & Rename to Home Screen:</strong> Install this dashboard on your mobile device:<br/>
+            <strong>Add & Rename to Home Screen:</strong> Install this dashboard on your mobile device:<br/>
             • <strong>iOS (Safari):</strong> Tap <strong>Share</strong>, select <strong>"Add to Home Screen"</strong>, rename it to <strong>"Marcus Weather"</strong>, and tap <strong>Add</strong>.<br/>
             • <strong>Android (Chrome):</strong> Tap the <strong>Menu</strong> (three dots), select <strong>"Add to Home screen"</strong> (or "Install app"), rename the shortcut to <strong>"Marcus Weather"</strong>, and confirm.
         </div>

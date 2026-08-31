@@ -420,7 +420,7 @@ def load_live_weather():
                     icon = p.get('icon', '')
                     daily_forecasts.append({
                         "day": day_name, 
-                        "high": "N/A", 
+                        "high": "N/api", 
                         "low": low,
                         "forecast": forecast, 
                         "icon": icon

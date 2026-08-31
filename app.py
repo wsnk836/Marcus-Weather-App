@@ -13,8 +13,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- BROWSER LOCALSTORAGE BRIDGE (CRASH-FREE HISTORY API FIX) ---
-# Silently updates the URL parameters using history.replaceState to avoid mobile hard-reload crashes.
+# --- BROWSER LOCALSTORAGE BRIDGE (FINAL BULLETPROOF LOOP FIX) ---
+# Silently grabs saved storage and syncs it via history state strictly ONCE per session.
 localStorage_sync_code = """
 <script>
     const urlParams = new URLSearchParams(window.location.search);
@@ -25,24 +25,33 @@ localStorage_sync_code = """
         if (urlParams.has('lon')) localStorage.setItem('nws_lon', urlParams.get('lon'));
         if (urlParams.has('loc_name')) localStorage.setItem('nws_loc_name', urlParams.get('loc_name'));
         if (urlParams.has('push_notifications')) localStorage.setItem('nws_push', urlParams.get('push_notifications'));
+        sessionStorage.setItem('nws_synced', 'true');
     } else {
-        const savedLat = localStorage.getItem('nws_lat');
-        const savedLon = localStorage.getItem('nws_lon');
-        const savedLoc = localStorage.getItem('nws_loc_name');
-        const savedPush = localStorage.getItem('nws_push');
+        const alreadySynced = sessionStorage.getItem('nws_synced');
+        
+        if (!alreadySynced) {
+            const savedLat = localStorage.getItem('nws_lat');
+            const savedLon = localStorage.getItem('nws_lon');
+            const savedLoc = localStorage.getItem('nws_loc_name');
+            const savedPush = localStorage.getItem('nws_push');
 
-        if (savedLat || savedPush) {
-            const lat = savedLat || '42.8242';
-            const lon = savedLon || '-95.7994';
-            const loc = savedLoc || 'Marcus, IA';
-            const push = savedPush || 'false';
-            
-            const newUrl = window.location.pathname + `?lat=${lat}&lon=${lon}&loc_name=${encodeURIComponent(loc)}&push_notifications=${push}`;
-            
-            // Silently update top-level URL and reload Streamlit app state safely once
-            if (window.top && window.top.history && window.top.history.replaceState) {
-                window.top.history.replaceState(null, '', newUrl);
-                window.top.location.reload();
+            if (savedLat || savedPush) {
+                const lat = savedLat || '42.8242';
+                const lon = savedLon || '-95.7994';
+                const loc = savedLoc || 'Marcus, IA';
+                const push = savedPush || 'false';
+                
+                sessionStorage.setItem('nws_synced', 'true');
+                
+                const newUrl = window.location.pathname + `?lat=${lat}&lon=${lon}&loc_name=${encodeURIComponent(loc)}&push_notifications=${push}`;
+                
+                if (window.top && window.top.history && window.top.history.replaceState) {
+                    window.top.history.replaceState(null, '', newUrl);
+                    // Force a single clean Python rerun by reloading via top-level location once safely
+                    window.top.location.href = newUrl;
+                }
+            } else {
+                sessionStorage.setItem('nws_synced', 'true');
             }
         }
     }
@@ -233,6 +242,7 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
                         localStorage.setItem('nws_lon', '{new_lon}');
                         localStorage.setItem('nws_loc_name', '{new_name}');
                         localStorage.setItem('nws_push', '{str(st.session_state.push_enabled).lower()}');
+                        sessionStorage.setItem('nws_synced', 'true');
                     </script>
                     """
           components.html(update_js, height=0)
@@ -266,6 +276,7 @@ with st.expander("🔔 Push Notifications Settings", expanded=False):
             localStorage.setItem('nws_lat', '{ACTIVE_LAT}');
             localStorage.setItem('nws_lon', '{ACTIVE_LON}');
             localStorage.setItem('nws_loc_name', '{location_name}');
+            sessionStorage.setItem('nws_synced', 'true');
         </script>
         """
     components.html(sync_script, height=0)

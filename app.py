@@ -259,9 +259,9 @@ st.markdown("""
 # --- QUICK ACCESS AUTO-SCROLL NAV BAR ---
 components.html("""
 <div class="quick-nav-container">
+    <button class="quick-nav-btn" onclick="scrollToSec('alerts-sec')">⚠️ Alerts</button>
     <button class="quick-nav-btn" onclick="scrollToSec('conditions-sec')">🌦️ Conditions</button>
     <button class="quick-nav-btn" onclick="scrollToSec('radar-sec')">📡 Radar</button>
-    <button class="quick-nav-btn" onclick="scrollToSec('alerts-sec')">⚠️ Alerts</button>
     <button class="quick-nav-btn" onclick="scrollToSec('repeater-sec')">📻 GMRS & Install</button>
     <button class="quick-nav-btn" onclick="scrollToSec('feedback-sec')">💬 Feedback</button>
 </div>
@@ -285,6 +285,45 @@ def load_live_weather():
         "User-Agent": "MarcusWeatherApp (wsnk836@gmail.com)",
         "Accept": "application/geo+json"
     }
+
+    # --- ACTIVE SEVERE WEATHER ALERTS (Positioned Above Current Conditions) ---
+    st.markdown('<div id="alerts-sec"></div>', unsafe_allow_html=True)
+    st.subheader("⚠️ Active NWS Weather Alerts")
+    try:
+        alerts_url = "https://api.weather.gov/alerts/active?point=42.8242,-95.7994"
+        alerts_response = requests.get(alerts_url, headers=headers, timeout=10).json()
+        alerts = alerts_response.get("features", [])
+        
+        if len(alerts) > 0:
+            for alert in alerts:
+                props = alert.get("properties", {})
+                event = props.get("event", "Weather Alert")
+                headline = props.get("headline", "Severe weather alert issued.")
+                description = props.get("description", "No description provided.")
+                severity = props.get("severity", "Unknown")
+                
+                status_color = "#ef4444" if severity in ["Extreme", "Severe"] else "#f87171"
+                
+                st.markdown(f"""
+                <div class="alert-card-severe" style="border-left-color: {status_color};">
+                    <strong style="color: {status_color};">🚨 {event}</strong><br/>
+                    <span style="color: #f4f4f5; font-size: 0.9rem; margin-top: 4px; display: block;">{headline}</span>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                with st.expander("📄 View Full Warning Statement"):
+                    st.write(description)
+        else:
+            st.markdown("""
+            <div class="alert-card-clear">
+                🟢 <strong>All Clear:</strong> No active warnings or advisories for Marcus, IA.
+            </div>
+            """, unsafe_allow_html=True)
+            
+    except Exception as e:
+        st.error(f"Could not reach NWS alert servers: {e}")
+
+    st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
 
     # --- TWO-COLUMN DASHBOARD LAYOUT ---
     col_left, col_right = st.columns([1.1, 1], gap="large")
@@ -408,43 +447,6 @@ def load_live_weather():
             👋 <strong>Welcome to Marcus Weather Command.</strong> Your centralized operational dashboard for live local meteorological telemetry, high-definition Doppler radar loops, and emergency alerts. Keep this app active for continuous monitoring.
         </div>
         """, unsafe_allow_html=True)
-
-        # --- ACTIVE SEVERE WEATHER ALERTS ---
-        st.markdown('<div id="alerts-sec"></div>', unsafe_allow_html=True)
-        st.subheader("⚠️ NWS Alerts")
-        try:
-            alerts_url = "https://api.weather.gov/alerts/active?point=42.8242,-95.7994"
-            alerts_response = requests.get(alerts_url, headers=headers, timeout=10).json()
-            alerts = alerts_response.get("features", [])
-            
-            if len(alerts) > 0:
-                for alert in alerts:
-                    props = alert.get("properties", {})
-                    event = props.get("event", "Weather Alert")
-                    headline = props.get("headline", "Severe weather alert issued.")
-                    description = props.get("description", "No description provided.")
-                    severity = props.get("severity", "Unknown")
-                    
-                    status_color = "#ef4444" if severity in ["Extreme", "Severe"] else "#f87171"
-                    
-                    st.markdown(f"""
-                    <div class="alert-card-severe" style="border-left-color: {status_color};">
-                        <strong style="color: {status_color};">🚨 {event}</strong><br/>
-                        <span style="color: #f4f4f5; font-size: 0.9rem; margin-top: 4px; display: block;">{headline}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    with st.expander("📄 View Full Warning Statement"):
-                        st.write(description)
-            else:
-                st.markdown("""
-                <div class="alert-card-clear">
-                    🟢 <strong>All Clear:</strong> No active warnings or advisories for Marcus, IA.
-                </div>
-                """, unsafe_allow_html=True)
-                
-        except Exception as e:
-            st.error(f"Could not reach NWS alert servers: {e}")
 
         # --- REPEATER ANNOUNCEMENT BANNER & INSTALLATION / RENAMING INSTRUCTIONS ---
         st.markdown('<div id="repeater-sec"></div>', unsafe_allow_html=True)

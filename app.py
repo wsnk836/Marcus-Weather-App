@@ -265,4 +265,113 @@ def load_live_weather():
     st.subheader("🌦️ Current Conditions & Local Forecast")
     try:
         points_url = "https://api.weather.gov/points/42.8242,-95.7994"
-        points_response = requests
+        points_response = requests.get(points_url, headers=headers, timeout=10).json()
+        forecast_url = points_response["properties"]["forecast"]
+        
+        forecast_response = requests.get(forecast_url, headers=headers, timeout=10).json()
+        periods = forecast_response["properties"]["periods"]
+        
+        current = periods[0]
+        
+        # Current Metric Row
+        col1, col2, col3 = st.columns(3)
+        col1.metric("🌡️ Temperature", f"{current['temperature']} °{current['temperatureUnit']}")
+        col2.metric("💨 Wind", f"{current['windSpeed']} {current['windDirection']}")
+        col3.metric("☁️ Conditions", current['shortForecast'])
+        
+        st.info(f"**Detailed Summary:** {current['detailedForecast']}")
+        
+        # --- PROCESS PERIODS INTO DAILY CARDS ---
+        daily_forecasts = []
+        i = 0
+        while i < len(periods):
+            p = periods[i]
+            if p['isDaytime']:
+                day_name = p['name']
+                high = f"{p['temperature']}°{p['temperatureUnit']}"
+                forecast = p['shortForecast']
+                icon = p.get('icon', '')
+                
+                low = "N/A"
+                if i + 1 < len(periods) and not periods[i+1]['isDaytime']:
+                    low = f"{periods[i+1]['temperature']}°{periods[i+1]['temperatureUnit']}"
+                    i += 1  
+                
+                daily_forecasts.append({
+                    "day": day_name, "high": high, "low": low,
+                    "forecast": forecast, "icon": icon
+                })
+            else:
+                day_name = p['name']
+                low = f"{p['temperature']}°{p['temperatureUnit']}"
+                forecast = p['shortForecast']
+                icon = p.get('icon', '')
+                daily_forecasts.append({
+                    "day": day_name, "high": "N/A", "low": low,
+                    "forecast": forecast, "icon": icon
+                })
+            i += 1
+
+        # --- EXTENDED FORECAST TABS ---
+        st.write("")
+        tab5, tab7 = st.tabs(["📅 5-Day Outlook", "📅 7-Day Outlook"])
+        
+        with tab5:
+            days_to_show = daily_forecasts[:5]
+            cols5 = st.columns(len(days_to_show))
+            for idx, day_data in enumerate(days_to_show):
+                with cols5[idx]:
+                    with st.container(border=True):
+                        st.markdown(f"#### {day_data['day']}")
+                        if day_data['icon']:
+                            st.image(day_data['icon'], width=52)
+                        st.markdown(f"🔥 **High:** {day_data['high']}")
+                        st.markdown(f"❄️ **Low:** {day_data['low']}")
+                        st.caption(day_data['forecast'])
+
+        with tab7:
+            days_to_show = daily_forecasts[:7]
+            cols7 = st.columns(len(days_to_show))
+            for idx, day_data in enumerate(days_to_show):
+                with cols7[idx]:
+                    with st.container(border=True):
+                        st.markdown(f"#### {day_data['day']}")
+                        if day_data['icon']:
+                            st.image(day_data['icon'], width=52)
+                        st.markdown(f"🔥 **High:** {day_data['high']}")
+                        st.markdown(f"❄️ **Low:** {day_data['low']}")
+                        st.caption(day_data['forecast'])
+
+    except Exception as e:
+        st.error(f"Could not load NWS forecast data: {e}")
+
+    st.markdown("---")
+
+    # --- LIVE RADAR LOOP ---
+    st.subheader("📡 Live Doppler Radar (KFSD - Sioux Falls)")
+    current_time = time.strftime('%I:%M:%S %p')
+    st.caption(f"🔄 Live auto-updating feed • Last synced at {current_time}")
+
+    # Unique timestamp parameter forces browser to download latest animated radar frame
+    radar_url = f"https://radar.weather.gov/ridge/standard/KFSD_loop.gif?t={int(time.time())}"
+    
+    # Styled Radar Card Container
+    with st.container(border=True):
+        st.image(radar_url, use_container_width=True)
+
+
+# Execute auto-refresh fragment
+load_live_weather()
+
+# ==========================================
+# --- GITHUB REPOSITORY LINK FOOTER ---
+# ==========================================
+st.markdown("""
+<div style="text-align: center; color: #94a3b8; font-size: 0.95rem; padding-top: 30px; padding-bottom: 20px;">
+    <hr style="border: none; border-top: 1px solid #334155; margin-bottom: 20px;">
+    💻 View the source code or contribute on 
+    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: bold;">
+        GitHub
+    </a>
+</div>
+""", unsafe_allow_html=True)

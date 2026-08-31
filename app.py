@@ -2,6 +2,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 import requests
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # Page Configuration
 st.set_page_config(
@@ -394,8 +396,10 @@ def load_live_weather():
 
     # --- LIVE RADAR LOOP ---
     st.subheader("📡 Live Doppler Radar (KFSD - Sioux Falls)")
-    current_time = time.strftime('%I:%M:%S %p')
-    st.caption(f"🔄 Auto-syncing live feed • Last updated at {current_time}")
+    
+    # Convert current time to Central Time (CST/CDT)
+    cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
+    st.caption(f"🔄 Auto-syncing live feed • Last updated at {cst_time}")
 
     radar_url = f"https://radar.weather.gov/ridge/standard/KFSD_loop.gif?t={int(time.time())}"
     

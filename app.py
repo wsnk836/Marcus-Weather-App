@@ -182,23 +182,31 @@ st.markdown("""
         transform: translateY(-2px);
     }
 
-    /* Forecast Icons Styling */
+    /* Forecast Icons Styling - Expanded & Reflective */
     .digital-icon-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        margin: 8px 0;
+        margin: 12px 0;
     }
     
     .digital-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 10px;
-        background: #18191f;
-        border: 1px solid #27272a;
-        padding: 6px;
+        width: 80px;
+        height: 80px;
+        max-width: 100%;
+        border-radius: 14px;
+        background: radial-gradient(circle, #22242c 0%, #121316 100%);
+        border: 1px solid #3f3f46;
+        padding: 8px;
         object-fit: contain;
         display: block;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .digital-icon:hover {
+        transform: scale(1.08);
+        border-color: #ef4444;
     }
 
     /* Tabs UI Polish */
@@ -229,6 +237,10 @@ st.markdown("""
         }
         .hero-title {
             font-size: 1.4rem;
+        }
+        .digital-icon {
+            width: 65px;
+            height: 65px;
         }
     }
 </style>
@@ -275,6 +287,17 @@ components.html("""
     }
 </script>
 """, height=60, scrolling=False)
+
+
+def get_enhanced_icon_url(raw_url: str) -> str:
+    """Upgrades NWS icon URL resolution to large format for maximum clarity."""
+    if not raw_url:
+        return ""
+    if "?size=" in raw_url:
+        return raw_url.split("?")[0] + "?size=large"
+    elif "?" in raw_url:
+        return raw_url + "&size=large"
+    return raw_url + "?size=large"
 
 
 # ==========================================
@@ -367,7 +390,7 @@ def load_live_weather():
                     day_name = p['name']
                     high = f"{p['temperature']}°{p['temperatureUnit']}"
                     forecast = p['shortForecast']
-                    icon = p.get('icon', '')
+                    icon = get_enhanced_icon_url(p.get('icon', ''))
                     
                     low = "N/A"
                     if i + 1 < len(periods) and not periods[i+1]['isDaytime']:
@@ -382,7 +405,7 @@ def load_live_weather():
                     day_name = p['name']
                     low = f"{p['temperature']}°{p['temperatureUnit']}"
                     forecast = p['shortForecast']
-                    icon = p.get('icon', '')
+                    icon = get_enhanced_icon_url(p.get('icon', ''))
                     daily_forecasts.append({
                         "day": day_name, "high": "N/A", "low": low,
                         "forecast": forecast, "icon": icon
@@ -404,7 +427,7 @@ def load_live_weather():
                             if day_data['icon']:
                                 st.markdown(f"""
                                 <div class="digital-icon-container">
-                                    <img src="{day_data['icon']}" class="digital-icon" alt="weather icon" />
+                                    <img src="{day_data['icon']}" class="digital-icon" alt="{day_data['forecast']}" title="{day_data['forecast']}" />
                                 </div>
                                 """, unsafe_allow_html=True)
                             st.caption(f"H: {day_data['high']} | L: {day_data['low']}")
@@ -421,7 +444,7 @@ def load_live_weather():
                             if day_data['icon']:
                                 st.markdown(f"""
                                 <div class="digital-icon-container">
-                                    <img src="{day_data['icon']}" class="digital-icon" alt="weather icon" />
+                                    <img src="{day_data['icon']}" class="digital-icon" alt="{day_data['forecast']}" title="{day_data['forecast']}" />
                                 </div>
                                 """, unsafe_allow_html=True)
                             st.caption(f"H: {day_data['high']} | L: {day_data['low']}")
@@ -454,7 +477,7 @@ def load_live_weather():
         st.subheader("📻 Community News")
         st.markdown("""
         <div class="command-card repeater-card">
-            <strong>GMRS REPEATER GOING ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
+            <strong>GMRS REPEATER ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
         </div>
         """, unsafe_allow_html=True)
 

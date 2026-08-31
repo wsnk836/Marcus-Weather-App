@@ -407,11 +407,11 @@ def load_live_weather():
 load_live_weather()
 
 # ==========================================
-# --- COMMUNITY FEEDBACK & CLIENT-SIDE HTML FORM ---
+# --- COMMUNITY FEEDBACK AND SUGGESTIONS HTML FORM ---
 # ==========================================
 st.markdown("<div style='margin: 40px 0 20px 0;'></div>", unsafe_allow_html=True)
-st.subheader("💬 Community Feedback & Station Log")
-st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Send local reports or dashboard suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
+st.subheader("💬 Community Feedback and Suggestions")
+st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Send your feedback and suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
 
 components.html("""
 <!DOCTYPE html>
@@ -486,7 +486,7 @@ components.html("""
 <body>
     <form action="https://api.web3forms.com/submit" method="POST" id="web3form">
         <input type="hidden" name="access_key" value="6f59571f-f519-4655-9b50-095eed178152">
-        <input type="hidden" name="subject" value="🚨 Weather App Report from Marcus Command">
+        <input type="hidden" name="subject" value="💡 Community Feedback and Suggestions from Marcus Command">
         
         <div class="row">
             <div class="col form-group">
@@ -500,13 +500,13 @@ components.html("""
         </div>
         
         <div class="form-group">
-            <label>Your Report, Check-in, or Feedback *</label>
-            <textarea name="message" placeholder="Enter conditions or feedback here..." required></textarea>
+            <label>Your Feedback and Suggestions *</label>
+            <textarea name="message" placeholder="Enter your feedback or suggestions here..." required></textarea>
         </div>
         
         <input type="checkbox" name="botcheck" style="display: none;">
 
-        <button type="submit" id="submit-btn">Send to Command Email</button>
+        <button type="submit" id="submit-btn">Send Community Feedback and Suggestions</button>
         <div id="result"></div>
     </form>
 
@@ -520,7 +520,7 @@ components.html("""
             const object = Object.fromEntries(formData);
             const json = JSON.stringify(object);
             result.style.color = "#94a3b8";
-            result.innerHTML = "Sending report...";
+            result.innerHTML = "Sending feedback...";
 
             fetch('https://api.web3forms.com/submit', {
                 method: 'POST',
@@ -534,7 +534,7 @@ components.html("""
                 let jsonResponse = await response.json();
                 if (response.status == 200) {
                     result.style.color = "#22c55e";
-                    result.innerHTML = "✅ Feedback sent directly to wsnk836@gmail.com!";
+                    result.innerHTML = "✅ Feedback and suggestions sent directly to wsnk836@gmail.com!";
                     form.reset();
                 } else {
                     result.style.color = "#ef4444";

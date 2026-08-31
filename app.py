@@ -392,4 +392,254 @@ def load_live_weather():
                 i += 1
 
             # Set default selected day if not set or invalid
-            if not st.session_state.selected_forecast_day
+            if not st.session_state.selected_forecast_day or st.session_state.selected_forecast_day not in [d['day'] for d in daily_forecasts]:
+                st.session_state.selected_forecast_day = daily_forecasts[0]['day']
+
+            # --- EXTENDED FORECAST TABS ---
+            st.subheader("📅 Outlook")
+            tab3, tab7 = st.tabs(["3-Day", "7-Day"])
+            
+            with tab3:
+                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+                days_to_show_3 = daily_forecasts[:3]
+                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 6px;'>👆 Select a day below to pull up full NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
+                
+                cols3 = st.columns(len(days_to_show_3))
+                for idx, d_item in enumerate(days_to_show_3):
+                    with cols3[idx]:
+                        is_selected = (d_item['day'] == st.session_state.selected_forecast_day)
+                        btn_label = f"📍 {d_item['day']}" if is_selected else d_item['day']
+                        if st.button(btn_label, key=f"btn_3d_{idx}_{d_item['day']}", use_container_width=True):
+                            st.session_state.selected_forecast_day = d_item['day']
+                            st.rerun()
+
+            with tab7:
+                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+                days_to_show_7 = daily_forecasts[:7]
+                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 6px;'>👆 Select a day below to pull up full NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
+                
+                cols7 = st.columns(len(days_to_show_7))
+                for idx, d_item in enumerate(days_to_show_7):
+                    with cols7[idx]:
+                        is_selected = (d_item['day'] == st.session_state.selected_forecast_day)
+                        btn_label = f"📍 {d_item['day']}" if is_selected else d_item['day']
+                        if st.button(btn_label, key=f"btn_7d_{idx}_{d_item['day']}", use_container_width=True):
+                            st.session_state.selected_forecast_day = d_item['day']
+                            st.rerun()
+
+            selected_record = next((d for d in daily_forecasts if d['day'] == st.session_state.selected_forecast_day), daily_forecasts[0])
+
+            display_high = selected_record['high']
+            display_low = selected_record['low']
+            
+            current_temp_str = f"{current['temperature']}°{current['temperatureUnit']}"
+            if display_high == "N/A":
+                display_high = current_temp_str
+            if display_low == "N/A":
+                display_low = current_temp_str
+
+            # --- FULL FORECAST DRILL-DOWN LAYER ---
+            st.markdown(f"""
+            <div style="background: #18191f; border: 1px solid #27272a; border-left: 3px solid #ef4444; border-radius: 10px; padding: 18px 20px; margin-top: 15px;">
+                <div style="font-weight: 700; color: #f87171; font-size: 1.05rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                    🏛️ Full NWS Forecast Report • {selected_record['day']}
+                </div>
+                {f'<div style="font-size: 0.92rem; color: #f4f4f5; margin-bottom: 8px; line-height: 1.6;"><strong>Daytime Forecast:</strong> {selected_record["detailed"]}</div>' if selected_record['detailed'] else ''}
+                {f'<div style="font-size: 0.92rem; color: #d4d4d8; margin-bottom: 12px; line-height: 1.6;"><strong>Nighttime Forecast:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
+                <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 0.85rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 10px;">
+                    <div>🌡️ High: <strong style="color: #fafafa;">{display_high}</strong></div>
+                    <div>🌡️ Low: <strong style="color: #fafafa;">{display_low}</strong></div>
+                    <div>💨 Wind: <strong style="color: #fafafa;">{selected_record['wind_speed']} ({selected_record['wind_dir']})</strong></div>
+                    <div>📡 Station: <strong style="color: #fafafa;">NWS Sioux Falls (KFSD)</strong></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        except Exception as e:
+            st.error(f"Could not load NWS forecast telemetry: {e}")
+
+        st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
+
+        # --- LIVE RADAR LOOP ---
+        st.markdown('<div id="radar-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📡 Live Doppler Radar (KFSD)")
+        cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
+        st.caption(f"🔄 Sync active • {cst_time}")
+        radar_url = f"https://radar.weather.gov/ridge/standard/KFSD_loop.gif?t={int(time.time())}"
+        with st.container(border=True):
+            st.image(radar_url, use_container_width=True)
+
+    with col_right:
+        # --- WELCOME CARD ---
+        st.markdown("""
+        <div class="command-card welcome-card">
+            👋 <strong>Welcome to Marcus Weather Command.</strong> Your centralized operational dashboard for live local meteorological telemetry, high-definition Doppler radar loops, and emergency alerts. Keep this app active for continuous monitoring.
+        </div>
+        """, unsafe_allow_html=True)
+
+        # --- COMMUNITY NEWS SECTION ---
+        st.markdown('<div id="news-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📻 Community News")
+        st.markdown("""
+        <div class="command-card repeater-card">
+            <strong>GMRS REPEATER GOING ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
+        </div>
+        """, unsafe_allow_html=True)
+
+        # --- INSTALL SECTION ---
+        st.markdown('<div id="install-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📲 Install")
+        st.markdown("""
+        <div class="command-card install-card">
+            <strong>Add & Rename to Home Screen:</strong> Install this dashboard on your mobile device:<br/>
+            • <strong>iOS (Safari):</strong> Tap <strong>Share</strong>, select <strong>"Add to Home Screen"</strong>, rename it to <strong>"Marcus Weather"</strong>, and tap <strong>Add</strong>.<br/>
+            • <strong>Android (Chrome):</strong> Tap the <strong>Menu</strong> (three dots), select <strong>"Add to Home screen"</strong> (or "Install app"), rename the shortcut to <strong>"Marcus Weather"</strong>, and confirm.
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# Execute auto-refresh telemetry fragment
+load_live_weather()
+
+# ==========================================
+# --- COMMUNITY FEEDBACK AND SUGGESTIONS HTML FORM ---
+# ==========================================
+st.markdown('<div id="feedback-sec"></div>', unsafe_allow_html=True)
+st.markdown("<div style='margin: 20px 0 10px 0;'></div>", unsafe_allow_html=True)
+st.subheader("💬 Community Feedback and Suggestions")
+st.markdown("<p style='color: #a1a1aa; font-size: 0.92rem;'>Send your feedback and suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
+
+requests_comp.html("""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            background-color: transparent;
+            color: #f4f4f5;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .form-group { margin-bottom: 12px; }
+        .row { display: flex; gap: 12px; }
+        .col { flex: 1; }
+        label {
+            display: block;
+            font-size: 0.82rem;
+            color: #a1a1aa;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        input, textarea {
+            width: 100%;
+            background-color: #121316;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            color: #f4f4f5;
+            padding: 10px 12px;
+            font-size: 0.92rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, textarea:focus { border-color: #ef4444; }
+        textarea { resize: vertical; height: 80px; }
+        button {
+            background: #ef4444;
+            color: #0c0d10;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 4px;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        #result { margin-top: 8px; font-size: 0.88rem; text-align: center; }
+    </style>
+</head>
+<body>
+    <form action="https://api.web3forms.com/submit" method="POST" id="web3form">
+        <input type="hidden" name="access_key" value="6f59571f-f519-4655-9b50-095eed178152">
+        <input type="hidden" name="subject" value="💡 Community Feedback and Suggestions from Marcus Command">
+        
+        <div class="row">
+            <div class="col form-group">
+                <label>Name *</label>
+                <input type="text" name="name" placeholder="Your Name" required>
+            </div>
+            <div class="col form-group">
+                <label>Location / Grid (Optional)</label>
+                <input type="text" name="location" placeholder="Marcus, IA">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Your Feedback and Suggestions *</label>
+            <textarea name="message" placeholder="Enter your feedback or suggestions here..." required></textarea>
+        </div>
+        
+        <input type="checkbox" name="botcheck" style="display: none;">
+
+        <button type="submit" id="submit-btn">Send Community Feedback and Suggestions</button>
+        <div id="result"></div>
+    </form>
+
+    <script>
+        const form = document.getElementById('web3form');
+        const result = document.getElementById('result');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const object = Object.fromEntries(formData);
+            const json = JSON.stringify(object);
+            result.style.color = "#a1a1aa";
+            result.innerHTML = "Sending feedback...";
+
+            fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: json
+            })
+            .then(async (response) => {
+                let jsonResponse = await response.json();
+                if (response.status == 200) {
+                    result.style.color = "#10b981";
+                    result.innerHTML = "✅ Feedback and suggestions sent directly to wsnk836@gmail.com!";
+                    form.reset();
+                } else {
+                    result.style.color = "#ef4444";
+                    result.innerHTML = jsonResponse.message || "Something went wrong!";
+                }
+            })
+            .catch(error => {
+                result.style.color = "#ef4444";
+                result.innerHTML = "Network connection error!";
+            });
+        });
+    </script>
+</body>
+</html>
+""", height=270, scrolling=False)
+
+# ==========================================
+# --- GITHUB REPOSITORY LINK FOOTER ---
+# ==========================================
+st.markdown("""
+<div style="text-align: center; color: #71717a; font-size: 0.88rem; padding-top: 20px; padding-bottom: 15px;">
+    <hr style="border: none; border-top: 1px solid #27272a; margin-bottom: 15px;">
+    💻 Source code available on 
+    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #f87171; text-decoration: none; font-weight: 600;">
+        GitHub
+    </a>
+</div>
+""", unsafe_allow_html=True)

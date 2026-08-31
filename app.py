@@ -602,4 +602,44 @@ components.html("""
             result.style.color = "#a1a1aa";
             result.innerHTML = "Sending feedback...";
 
-            fetch('https://api.web3forms.com/submit',
+            fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: json
+            })
+            .then(async (response) => {
+                let jsonResponse = await response.json();
+                if (response.status == 200) {
+                    result.style.color = "#10b981";
+                    result.innerHTML = "✅ Feedback and suggestions sent directly to wsnk836@gmail.com!";
+                    form.reset();
+                } else {
+                    result.style.color = "#ef4444";
+                    result.innerHTML = jsonResponse.message || "Something went wrong!";
+                }
+            })
+            .catch(error => {
+                result.style.color = "#ef4444";
+                result.innerHTML = "Network connection error!";
+            });
+        });
+    </script>
+</body>
+</html>
+""", height=270, scrolling=False)
+
+# ==========================================
+# --- GITHUB REPOSITORY LINK FOOTER ---
+# ==========================================
+st.markdown("""
+<div style="text-align: center; color: #71717a; font-size: 0.88rem; padding-top: 20px; padding-bottom: 15px;">
+    <hr style="border: none; border-top: 1px solid #27272a; margin-bottom: 15px;">
+    💻 Source code available on 
+    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #f87171; text-decoration: none; font-weight: 600;">
+        GitHub
+    </a>
+</div>
+""", unsafe_allow_html=True)

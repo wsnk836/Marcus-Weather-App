@@ -191,6 +191,41 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
       except Exception as e:
         st.error(f"Geocoding connection error: {e}")
 
+# ==========================================
+# --- PUSH NOTIFICATIONS SETTINGS PANEL ---
+# ==========================================
+with st.expander("🔔 Push Notifications Settings", expanded=False):
+  if "push_enabled" not in st.session_state:
+    st.session_state.push_enabled = False
+
+  push_toggle = st.toggle(
+      "Accept Push Notifications for Severe Weather Alerts",
+      value=st.session_state.push_enabled,
+  )
+
+  if push_toggle != st.session_state.push_enabled:
+    st.session_state.push_enabled = push_toggle
+    if push_toggle:
+      st.success(
+          "✅ Push notifications accepted! You are opted in for real-time"
+          " weather warnings."
+      )
+    else:
+      st.info(
+          "🔕 Push notifications declined. Alerts will remain viewable"
+          " in-app."
+      )
+
+  if st.session_state.push_enabled:
+    st.caption(
+        "Status: Active — Priority severe weather warnings will be pushed to"
+        " this device."
+    )
+  else:
+    st.caption(
+        "Status: Inactive — Toggle above to accept push notification updates."
+    )
+
 
 # ==========================================
 # --- CONTINUOUSLY REFRESHING FRAGMENT ---

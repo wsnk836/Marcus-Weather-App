@@ -212,7 +212,7 @@ st.markdown("""
 # --- REPEATER ANNOUNCEMENT BANNER ---
 st.markdown("""
 <div class="repeater-card">
-    <strong>📻 GMRS REPEATER ACTIVE:</strong> Tune into <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong> — Open for local use!
+    <strong>📻 GMRS REPEATER GOING ACTIVE 12/01/2026:</strong> Tune into <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong> — Open for local use!
 </div>
 """, unsafe_allow_html=True)
 

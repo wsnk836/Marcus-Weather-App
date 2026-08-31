@@ -179,18 +179,18 @@ requests_comp.html("""
         window.parent.location.reload();
     }, 600000);
 
-    // Global Browser Notification Handler
-    window.requestWeatherNotification = function(title, bodyText) {
-        if (!("Notification" in window)) {
+    // Global Browser Notification Handler injected into top-level window
+    window.parent.requestWeatherNotification = function(title, bodyText) {
+        if (!("Notification" in window.parent)) {
             console.log("This browser does not support desktop notification");
             return;
         }
-        if (Notification.permission === "granted") {
-            new Notification(title, { body: bodyText, icon: "https://radar.weather.gov/ridge/standard/KFSD_loop.gif" });
-        } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(function (permission) {
+        if (window.parent.Notification.permission === "granted") {
+            new window.parent.Notification(title, { body: bodyText, icon: "https://radar.weather.gov/ridge/standard/KFSD_loop.gif" });
+        } else if (window.parent.Notification.permission !== "denied") {
+            window.parent.Notification.requestPermission().then(function (permission) {
                 if (permission === "granted") {
-                    new Notification(title, { body: bodyText, icon: "https://radar.weather.gov/ridge/standard/KFSD_loop.gif" });
+                    new window.parent.Notification(title, { body: bodyText, icon: "https://radar.weather.gov/ridge/standard/KFSD_loop.gif" });
                 }
             });
         }

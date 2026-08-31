@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 # Page Configuration
 st.set_page_config(
-    page_title="Weather Command", 
+    page_title="Marcus Weather Command", 
     page_icon="📡",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -16,13 +16,16 @@ st.set_page_config(
 # --- AUTOMATIC MOBILE & BROWSER NAMING ---
 requests_comp.html("""
 <script>
-    try {
-        window.parent.document.title = "Weather Command";
-        let metaApple = window.parent.document.createElement('meta');
-        metaApple.name = "apple-mobile-web-app-title";
-        metaApple.content = "Weather Radar";
-        window.parent.document.head.appendChild(metaApple);
-    } catch(e) {}
+    window.parent.document.title = "Marcus Weather Command";
+    let metaApple = window.parent.document.createElement('meta');
+    metaApple.name = "apple-mobile-web-app-title";
+    metaApple.content = "Marcus Weather";
+    window.parent.document.head.appendChild(metaApple);
+
+    let metaApp = window.parent.document.createElement('meta');
+    metaApp.name = "application-name";
+    metaApp.content = "Marcus Weather";
+    window.parent.document.head.appendChild(metaApp);
 </script>
 """, height=0, width=0)
 
@@ -61,6 +64,33 @@ st.markdown("""
         text-transform: uppercase;
         font-weight: 500;
     }
+    .quick-nav-container {
+        display: flex;
+        gap: 8px;
+        background: #121316;
+        border: 1px solid #27272a;
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 20px;
+        overflow-x: auto;
+    }
+    .quick-nav-btn {
+        background: #18191f;
+        border: 1px solid #27272a;
+        color: #d4d4d8;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+    .quick-nav-btn:hover {
+        background: #ef4444;
+        color: #0c0d10;
+        border-color: #ef4444;
+    }
     .command-card {
         background: #121316;
         border: 1px solid #27272a;
@@ -72,17 +102,13 @@ st.markdown("""
         line-height: 1.5;
     }
     .welcome-card { border-left: 4px solid #ef4444; }
-    .permission-box {
-        background: #18191f;
-        border: 1px solid #27272a;
-        border-top: 3px solid #38bdf8;
-        border-radius: 14px;
-        padding: 35px;
-        text-align: center;
-        max-width: 600px;
-        margin: 40px auto;
-        box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.7);
+    .repeater-card {
+        background: rgba(239, 68, 68, 0.05);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-left: 4px solid #f87171;
+        color: #fee2e2;
     }
+    .install-card { border-left: 4px solid #38bdf8; color: #d4d4d8; font-size: 0.9rem; }
     .alert-card-severe {
         background: rgba(239, 68, 68, 0.12);
         border: 1px solid rgba(239, 68, 68, 0.3);
@@ -99,49 +125,6 @@ st.markdown("""
         padding: 14px 18px;
         margin-bottom: 12px;
         color: #d1fae5;
-    }
-    .radar-wrapper {
-        position: relative;
-        width: 100%;
-        background: #121316;
-        border-radius: 10px;
-        overflow: hidden;
-        border: 1px solid #27272a;
-    }
-    .radar-img {
-        width: 100%;
-        display: block;
-    }
-    .user-pin-container {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        pointer-events: none;
-    }
-    .user-dot {
-        width: 12px;
-        height: 12px;
-        background-color: #38bdf8;
-        border: 2px solid #ffffff;
-        border-radius: 50%;
-        box-shadow: 0 0 10px #38bdf8, 0 0 20px #38bdf8;
-        animation: portal-dot 2s infinite;
-    }
-    .user-label {
-        background: rgba(12, 13, 16, 0.85);
-        color: #38bdf8;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 2px 6px;
-        border-radius: 4px;
-        border: 1px solid rgba(56, 189, 248, 0.4);
-        margin-top: 3px;
-        white-space: nowrap;
-        letter-spacing: 0.03em;
     }
     [data-testid="stMetric"] {
         background: #121316;
@@ -177,118 +160,153 @@ st.markdown("""
         border-color: #ef4444 !important;
         font-weight: 700 !important;
     }
+    @media (max-width: 768px) {
+        .block-container { padding: 1rem 0.75rem !important; }
+        .hero-title { font-size: 1.4rem; }
+    }
 </style>
 """, unsafe_allow_html=True)
+
+# --- BACKGROUND WAKE LOCK & PERSISTENT NOTIFICATION ENGINE ---
+requests_comp.html("""
+<script>
+    // Request Screen Wake Lock to prevent mobile browsers from sleeping app loop
+    let wakeLock = null;
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Wake Lock active: App will remain awake for alerts.');
+            }
+        } catch (err) {
+            console.log(`Wake Lock error: ${err.name}, ${err.message}`);
+        }
+    }
+    requestWakeLock();
+
+    // Re-acquire wake lock if visibility changes back to app
+    document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+            await requestWakeLock();
+        }
+    });
+
+    // Global Browser Notification Handler with Permission Persistence
+    window.parent.requestWeatherNotification = function(title, bodyText) {
+        if (!("Notification" in window.parent)) {
+            console.log("This browser does not support desktop notifications.");
+            return;
+        }
+        
+        if (window.parent.Notification.permission === "granted") {
+            try {
+                new window.parent.Notification(title, { 
+                    body: bodyText, 
+                    icon: "https://radar.weather.gov/ridge/standard/KFSD_loop.gif",
+                    tag: "marcus-weather-alert",
+                    renotify: true
+                });
+            } catch(e) {
+                console.log("Notification error: ", e);
+            }
+        } else if (window.parent.Notification.permission !== "denied") {
+            window.parent.Notification.requestPermission().then(function (permission) {
+                if (permission === "granted") {
+                    new window.parent.Notification(title, { 
+                        body: bodyText, 
+                        icon: "https://radar.weather.gov/ridge/standard/KFSD_loop.gif",
+                        tag: "marcus-weather-alert",
+                        renotify: true
+                    });
+                }
+            });
+        }
+    };
+</script>
+""", height=0, width=0)
 
 # --- HERO HEADER ---
 st.markdown("""
 <div class="hero-banner">
-    <div class="hero-title">📡 Weather Command</div>
-    <div class="hero-subtitle">Real-time NWS Telemetry & Precision Location Mapping</div>
+    <div class="hero-title">📡 Marcus Weather Command</div>
+    <div class="hero-subtitle">Real-time NWS Telemetry & Regional GMRS Radio Operations • Cherokee County, IA</div>
 </div>
 """, unsafe_allow_html=True)
 
-query_params = st.query_params
-user_lat = query_params.get("lat")
-user_lon = query_params.get("lon")
+# --- QUICK ACCESS NAV BAR ---
+requests_comp.html("""
+<div class="quick-nav-container">
+    <button class="quick-nav-btn" onclick="scrollToSec('alerts-sec')">⚠️ Alerts</button>
+    <button class="quick-nav-btn" onclick="scrollToSec('conditions-sec')">🌦️ Conditions</button>
+    <button class="quick-nav-btn" onclick="scrollToSec('radar-sec')">📡 Radar</button>
+    <button class="quick-nav-btn" onclick="scrollToSec('news-sec')">📻 Community News</button>
+    <button class="quick-nav-btn" onclick="scrollToSec('install-sec')">📲 Install</button>
+    <button class="quick-nav-btn" onclick="scrollToSec('feedback-sec')">💬 Feedback</button>
+</div>
+<script>
+    function scrollToSec(id) {
+        const el = window.parent.document.getElementById(id);
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    }
+</script>
+""", height=60, scrolling=False)
 
-# If GPS coordinates are missing, offer GPS prompt and easy City Search
-if not user_lat or not user_lon:
-    st.markdown("""
-    <div class="permission-box">
-        <h2 style="color: #f87171; margin-bottom: 12px;">📍 Location Setup Required</h2>
-        <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin-bottom: 25px;">
-            Browser GPS can sometimes be inaccurate on desktop networks. Use GPS auto-detect below or enter your city/ZIP directly.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        requests_comp.html("""
-        <div style="text-align: center; margin-bottom: 20px;">
-            <button onclick="requestDeviceLocation()" style="
-                background-color: #ef4444; 
-                color: white; 
-                border: none; 
-                padding: 14px 28px; 
-                font-size: 1.05rem; 
-                font-weight: 700; 
-                border-radius: 8px; 
-                cursor: pointer;
-                box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
-                width: 100%;
-            ">
-                📍 Detect GPS Location
-            </button>
-        </div>
-        <script>
-            function requestDeviceLocation() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            const lat = position.coords.latitude;
-                            const lon = position.coords.longitude;
-                            const url = new URL(window.location.href);
-                            url.searchParams.set('lat', lat);
-                            url.searchParams.set('lon', lon);
-                            window.location.href = url.toString();
-                        },
-                        (error) => {
-                            alert("Location access denied or unavailable.");
-                        },
-                        { timeout: 10000, maximumAge: 0, enableHighAccuracy: true }
-                    );
-                } else {
-                    alert("Geolocation is not supported by your browser.");
-                }
-            }
-        </script>
-        """, height=70)
-
-        with st.expander("🏙️ Search by City or ZIP Code (Recommended)", expanded=True):
-            with st.form("city_search_form"):
-                city_query = st.text_input("Enter City, State or ZIP", placeholder="e.g. North Liberty, IA or 52317")
-                if st.form_submit_button("Lookup Location"):
-                    if city_query.strip():
-                        try:
-                            geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(city_query)}&format=json&limit=1"
-                            geo_resp = requests.get(geo_url, headers={"User-Agent": "WeatherCommandApp"}, timeout=5).json()
-                            if geo_resp:
-                                st.query_params["lat"] = geo_resp[0]["lat"]
-                                st.query_params["lon"] = geo_resp[0]["lon"]
-                                st.rerun()
-                            else:
-                                st.error("Location not found. Please try a more specific city or ZIP code.")
-                        except Exception as e:
-                            st.error(f"Geocoding error: {e}")
-
-    st.stop()
-
-try:
-    lat = float(user_lat)
-    lon = float(user_lon)
-except ValueError:
-    st.error("Invalid coordinates provided.")
-    st.stop()
-
+# ==========================================
+# --- CONTINUOUSLY REFRESHING FRAGMENT ---
+# ==========================================
 @st.fragment(run_every=60)
-def load_live_weather(lat, lon):
+def load_live_weather():
     headers = {
-        "User-Agent": "WeatherCommandApp (wsnk836@gmail.com)",
+        "User-Agent": "MarcusWeatherApp (wsnk836@gmail.com)",
         "Accept": "application/geo+json"
     }
 
+    # --- INITIALIZE SESSION STATE & PERSISTENT URL PARAMS ---
     if "selected_forecast_day" not in st.session_state:
         st.session_state.selected_forecast_day = None
 
-    st.subheader("⚠️ Active NWS Weather Alerts")
+    if "enable_push_alerts" not in st.session_state:
+        param_val = st.query_params.get("push_alerts", "true") # Default to True for seamless alert coverage
+        st.session_state.enable_push_alerts = (str(param_val).lower() == "true")
+
+    def update_push_preference():
+        st.query_params["push_alerts"] = str(st.session_state.enable_push_alerts).lower()
+
+    # --- ACTIVE SEVERE WEATHER ALERTS ---
+    st.markdown('<div id="alerts-sec"></div>', unsafe_allow_html=True)
+    
+    col_alert_header, col_alert_toggle = st.columns([2.5, 1])
+    with col_alert_header:
+        st.subheader("⚠️ Active NWS Weather Alerts")
+    with col_alert_toggle:
+        st.toggle(
+            "🔔 Push Alerts", 
+            key="enable_push_alerts", 
+            on_change=update_push_preference,
+            help="Keep persistent browser notifications locked ON."
+        )
+
     try:
-        alerts_url = f"https://api.weather.gov/alerts/active?point={lat},{lon}"
+        alerts_url = "https://api.weather.gov/alerts/active?point=42.8242,-95.7994"
         alerts_response = requests.get(alerts_url, headers=headers, timeout=10).json()
         alerts = alerts_response.get("features", [])
         
         if len(alerts) > 0:
+            if st.session_state.enable_push_alerts:
+                first_alert_title = alerts[0].get("properties", {}).get("event", "Severe Weather Warning")
+                first_alert_desc = alerts[0].get("properties", {}).get("headline", "New NWS weather alert active for Marcus, IA.")
+                safe_title = first_alert_title.replace('"', '\\"')
+                safe_desc = first_alert_desc.replace('"', '\\"').replace('\n', ' ')
+                
+                requests_comp.html(f"""
+                <script>
+                    if (window.parent.requestWeatherNotification) {{
+                        window.parent.requestWeatherNotification("🚨 {safe_title}", "{safe_desc}");
+                    }}
+                </script>
+                """, height=0, width=0)
+
             for alert in alerts:
                 props = alert.get("properties", {})
                 event = props.get("event", "Weather Alert")
@@ -309,7 +327,7 @@ def load_live_weather(lat, lon):
         else:
             st.markdown("""
             <div class="alert-card-clear">
-                🟢 <strong>All Clear:</strong> No active warnings or advisories for your current location.
+                🟢 <strong>All Clear:</strong> No active warnings or advisories for Marcus, IA.
             </div>
             """, unsafe_allow_html=True)
             
@@ -318,15 +336,17 @@ def load_live_weather(lat, lon):
 
     st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
 
+    # --- TWO-COLUMN DASHBOARD LAYOUT ---
     col_left, col_right = st.columns([1.1, 1], gap="large")
 
     with col_left:
+        # --- CURRENT CONDITIONS & METRICS ---
+        st.markdown('<div id="conditions-sec"></div>', unsafe_allow_html=True)
         st.subheader("🌦️ Current Conditions")
         try:
-            points_url = f"https://api.weather.gov/points/{lat},{lon}"
+            points_url = "https://api.weather.gov/points/42.8242,-95.7994"
             points_response = requests.get(points_url, headers=headers, timeout=10).json()
             forecast_url = points_response["properties"]["forecast"]
-            radar_station = points_response["properties"].get("radarStation", "KFSD")
             
             forecast_response = requests.get(forecast_url, headers=headers, timeout=10).json()
             periods = forecast_response["properties"]["periods"]
@@ -351,27 +371,41 @@ def load_live_weather(lat, lon):
             i = 0
             while i < len(periods):
                 p = periods[i]
+                
                 if p['isDaytime']:
                     day_name = p['name']
                     day_detailed = p['detailedForecast']
                     high_temp = f"{p['temperature']}°{p['temperatureUnit']}"
                     wind_speed = p['windSpeed']
                     wind_dir = p.get('windDirection', '')
+                    
                     low_temp = "N/A"
                     night_detailed = ""
+                    
                     if i + 1 < len(periods) and not periods[i+1]['isDaytime']:
                         night_p = periods[i+1]
                         low_temp = f"{night_p['temperature']}°{night_p['temperatureUnit']}"
                         night_detailed = night_p['detailedForecast']
                         i += 1
-                    daily_forecasts.append({"day": day_name, "high": high_temp, "low": low_temp, "detailed": day_detailed, "low_detailed": night_detailed, "wind_speed": wind_speed, "wind_dir": wind_dir})
+                        
+                    daily_forecasts.append({
+                        "day": day_name,
+                        "high": high_temp,
+                        "low": low_temp,
+                        "detailed": day_detailed,
+                        "low_detailed": night_detailed,
+                        "wind_speed": wind_speed,
+                        "wind_dir": wind_dir
+                    })
                 else:
                     night_name = p['name']
                     day_label = "Today" if night_name.lower() == "tonight" else night_name.replace(" Night", "").strip()
+                    
                     low_temp = f"{p['temperature']}°{p['temperatureUnit']}"
                     night_detailed = p['detailedForecast']
                     wind_speed = p['windSpeed']
                     wind_dir = p.get('windDirection', '')
+                    
                     high_temp = "N/A"
                     day_detailed = ""
                     if i + 1 < len(periods) and periods[i+1]['isDaytime']:
@@ -379,7 +413,16 @@ def load_live_weather(lat, lon):
                         high_temp = f"{day_p['temperature']}°{day_p['temperatureUnit']}"
                         day_detailed = day_p['detailedForecast']
                         i += 1
-                    daily_forecasts.append({"day": day_label, "high": high_temp, "low": low_temp, "detailed": day_detailed, "low_detailed": night_detailed, "wind_speed": wind_speed, "wind_dir": wind_dir})
+
+                    daily_forecasts.append({
+                        "day": day_label,
+                        "high": high_temp,
+                        "low": low_temp,
+                        "detailed": day_detailed,
+                        "low_detailed": night_detailed,
+                        "wind_speed": wind_speed,
+                        "wind_dir": wind_dir
+                    })
                 i += 1
 
             if not st.session_state.selected_forecast_day or st.session_state.selected_forecast_day not in [d['day'] for d in daily_forecasts]:
@@ -391,6 +434,8 @@ def load_live_weather(lat, lon):
             with tab3:
                 st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
                 days_to_show_3 = daily_forecasts[:3]
+                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 6px;'>👆 Select a day below to pull up full NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
+                
                 cols3 = st.columns(len(days_to_show_3))
                 for idx, d_item in enumerate(days_to_show_3):
                     with cols3[idx]:
@@ -403,6 +448,8 @@ def load_live_weather(lat, lon):
             with tab7:
                 st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
                 days_to_show_7 = daily_forecasts[:7]
+                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 6px;'>👆 Select a day below to pull up full NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
+                
                 cols7 = st.columns(len(days_to_show_7))
                 for idx, d_item in enumerate(days_to_show_7):
                     with cols7[idx]:
@@ -413,21 +460,28 @@ def load_live_weather(lat, lon):
                             st.rerun()
 
             selected_record = next((d for d in daily_forecasts if d['day'] == st.session_state.selected_forecast_day), daily_forecasts[0])
-            display_high = selected_record['high'] if selected_record['high'] != "N/A" else f"{current['temperature']}°{current['temperatureUnit']}"
-            display_low = selected_record['low'] if selected_record['low'] != "N/A" else f"{current['temperature']}°{current['temperatureUnit']}"
+
+            display_high = selected_record['high']
+            display_low = selected_record['low']
+            
+            current_temp_str = f"{current['temperature']}°{current['temperatureUnit']}"
+            if display_high == "N/A":
+                display_high = current_temp_str
+            if display_low == "N/A":
+                display_low = current_temp_str
 
             st.markdown(f"""
             <div style="background: #18191f; border: 1px solid #27272a; border-left: 3px solid #ef4444; border-radius: 10px; padding: 18px 20px; margin-top: 15px;">
-                <div style="font-weight: 700; color: #f87171; font-size: 1.05rem; margin-bottom: 10px;">
-                    🏛️ Forecast Report • {selected_record['day']}
+                <div style="font-weight: 700; color: #f87171; font-size: 1.05rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                    🏛️ Full NWS Forecast Report • {selected_record['day']}
                 </div>
-                {f'<div style="font-size: 0.92rem; color: #f4f4f5; margin-bottom: 8px;"><strong>Daytime:</strong> {selected_record["detailed"]}</div>' if selected_record['detailed'] else ''}
-                {f'<div style="font-size: 0.92rem; color: #d4d4d8; margin-bottom: 12px;"><strong>Nighttime:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
+                {f'<div style="font-size: 0.92rem; color: #f4f4f5; margin-bottom: 8px; line-height: 1.6;"><strong>Daytime Forecast:</strong> {selected_record["detailed"]}</div>' if selected_record['detailed'] else ''}
+                {f'<div style="font-size: 0.92rem; color: #d4d4d8; margin-bottom: 12px; line-height: 1.6;"><strong>Nighttime Forecast:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
                 <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 0.85rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 10px;">
                     <div>🌡️ High: <strong style="color: #fafafa;">{display_high}</strong></div>
                     <div>🌡️ Low: <strong style="color: #fafafa;">{display_low}</strong></div>
                     <div>💨 Wind: <strong style="color: #fafafa;">{selected_record['wind_speed']} ({selected_record['wind_dir']})</strong></div>
-                    <div>📡 Station: <strong style="color: #fafafa;">{radar_station}</strong></div>
+                    <div>📡 Station: <strong style="color: #fafafa;">NWS Sioux Falls (KFSD)</strong></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -437,56 +491,182 @@ def load_live_weather(lat, lon):
 
         st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
 
-        st.subheader(f"📡 Live Doppler Radar ({radar_station})")
+        # --- LIVE RADAR LOOP ---
+        st.markdown('<div id="radar-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📡 Live Doppler Radar (KFSD)")
         cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
-        st.caption(f"🔄 Sync active • {cst_time} • 📍 Location anchored to ({lat:.4f}, {lon:.4f})")
-        
-        radar_url = f"https://radar.weather.gov/ridge/standard/{radar_station}_loop.gif?t={int(time.time())}"
-        
-        st.markdown(f"""
-        <div class="radar-wrapper">
-            <img src="{radar_url}" class="radar-img" alt="Radar Loop">
-            <div class="user-pin-container">
-                <div class="user-dot"></div>
-                <div class="user-label">Your Location</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.caption(f"🔄 Sync active • {cst_time}")
+        radar_url = f"https://radar.weather.gov/ridge/standard/KFSD_loop.gif?t={int(time.time())}"
+        with st.container(border=True):
+            st.image(radar_url, use_container_width=True)
 
     with col_right:
         st.markdown("""
         <div class="command-card welcome-card">
-            👋 <strong>Location Locked.</strong> Your radar pin and NWS warning feeds are currently mapped to your selected area.
+            👋 <strong>Welcome to Marcus Weather Command.</strong> Your centralized operational dashboard for live local meteorological telemetry, high-definition Doppler radar loops, and emergency alerts. Keep this app active for continuous monitoring.
         </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("📍 Change Location")
-        loc_tab_city, loc_tab_coords = st.tabs(["City Search", "Coordinates"])
-        
-        with loc_tab_city:
-            with st.form("sidebar_city_form"):
-                new_city = st.text_input("City or ZIP", placeholder="e.g. North Liberty, IA")
-                if st.form_submit_button("Update City"):
-                    if new_city.strip():
-                        try:
-                            geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(new_city)}&format=json&limit=1"
-                            geo_resp = requests.get(geo_url, headers={"User-Agent": "WeatherCommandApp"}, timeout=5).json()
-                            if geo_resp:
-                                st.query_params["lat"] = geo_resp[0]["lat"]
-                                st.query_params["lon"] = geo_resp[0]["lon"]
-                                st.rerun()
-                            else:
-                                st.error("City not found.")
-                        except Exception as e:
-                            st.error(f"Error: {e}")
-                            
-        with loc_tab_coords:
-            with st.form("coord_form"):
-                manual_lat = st.number_input("Latitude", value=lat, format="%.4f")
-                manual_lon = st.number_input("Longitude", value=lon, format="%.4f")
-                if st.form_submit_button("Update Coordinates"):
-                    st.query_params["lat"] = str(manual_lat)
-                    st.query_params["lon"] = str(manual_lon)
-                    st.rerun()
+        st.markdown('<div id="news-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📻 Community News")
+        st.markdown("""
+        <div class="command-card repeater-card">
+            <strong>GMRS REPEATER GOING ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
+        </div>
+        """, unsafe_allow_html=True)
 
-load_live_weather(lat, lon)
+        st.markdown('<div id="install-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📲 Install")
+        st.markdown("""
+        <div class="command-card install-card">
+            <strong>Add & Rename to Home Screen:</strong> Install this dashboard on your mobile device:<br/>
+            • <strong>iOS (Safari):</strong> Tap <strong>Share</strong>, select <strong>"Add to Home Screen"</strong>, rename it to <strong>"Marcus Weather"</strong>, and tap <strong>Add</strong>.<br/>
+            • <strong>Android (Chrome):</strong> Tap the <strong>Menu</strong> (three dots), select <strong>"Add to Home screen"</strong> (or "Install app"), rename the shortcut to <strong>"Marcus Weather"</strong>, and confirm.
+        </div>
+        """, unsafe_allow_html=True)
+
+
+load_live_weather()
+
+# ==========================================
+# --- COMMUNITY FEEDBACK AND SUGGESTIONS HTML FORM ---
+# ==========================================
+st.markdown('<div id="feedback-sec"></div>', unsafe_allow_html=True)
+st.markdown("<div style='margin: 20px 0 10px 0;'></div>", unsafe_allow_html=True)
+st.subheader("💬 Community Feedback and Suggestions")
+st.markdown("<p style='color: #a1a1aa; font-size: 0.92rem;'>Send your feedback and suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
+
+requests_comp.html("""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            background-color: transparent;
+            color: #f4f4f5;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .form-group { margin-bottom: 12px; }
+        .row { display: flex; gap: 12px; }
+        .col { flex: 1; }
+        label {
+            display: block;
+            font-size: 0.82rem;
+            color: #a1a1aa;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        input, textarea {
+            width: 100%;
+            background-color: #121316;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            color: #f4f4f5;
+            padding: 10px 12px;
+            font-size: 0.92rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, textarea:focus { border-color: #ef4444; }
+        textarea { resize: vertical; height: 80px; }
+        button {
+            background: #ef4444;
+            color: #0c0d10;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 4px;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        #result { margin-top: 8px; font-size: 0.88rem; text-align: center; }
+    </style>
+</head>
+<body>
+    <form action="https://api.web3forms.com/submit" method="POST" id="web3form">
+        <input type="hidden" name="access_key" value="6f59571f-f519-4655-9b50-095eed178152">
+        <input type="hidden" name="subject" value="💡 Community Feedback and Suggestions from Marcus Command">
+        
+        <div class="row">
+            <div class="col form-group">
+                <label>Name *</label>
+                <input type="text" name="name" placeholder="Your Name" required>
+            </div>
+            <div class="col form-group">
+                <label>Location / Grid (Optional)</label>
+                <input type="text" name="location" placeholder="Marcus, IA">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Your Feedback and Suggestions *</label>
+            <textarea name="message" placeholder="Enter your feedback or suggestions here..." required></textarea>
+        </div>
+        
+        <input type="checkbox" name="botcheck" style="display: none;">
+
+        <button type="submit" id="submit-btn">Send Community Feedback and Suggestions</button>
+        <div id="result"></div>
+    </form>
+
+    <script>
+        const form = document.getElementById('web3form');
+        const result = document.getElementById('result');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const object = Object.fromEntries(formData);
+            const json = JSON.stringify(object);
+            result.style.color = "#a1a1aa";
+            result.innerHTML = "Sending feedback...";
+
+            fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: json
+            })
+            .then(async (response) => {
+                let jsonResponse = await response.json();
+                if (response.status == 200) {
+                    result.style.color = "#10b981";
+                    result.innerHTML = "✅ Feedback and suggestions sent directly to wsnk836@gmail.com!";
+                    form.reset();
+                } else {
+                    result.style.color = "#ef4444";
+                    result.innerHTML = jsonResponse.message || "Something went wrong!";
+                }
+            })
+            .catch(error => {
+                result.style.color = "#ef4444";
+                result.innerHTML = "Network connection error!";
+            });
+        });
+    </script>
+</body>
+</html>
+""", height=270, scrolling=False)
+
+# ==========================================
+# --- GITHUB REPOSITORY LINK FOOTER ---
+# ==========================================
+st.markdown("""
+<div style="text-align: center; color: #71717a; font-size: 0.88rem; padding-top: 20px; padding-bottom: 15px;">
+    <hr style="border: none; border-top: 1px solid #27272a; margin-bottom: 15px;">
+    💻 Source code available on 
+    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #f87171; text-decoration: none; font-weight: 600;">
+        GitHub
+    </a>
+</div>
+""", unsafe_allow_html=True)

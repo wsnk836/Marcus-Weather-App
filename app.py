@@ -3,16 +3,20 @@ import streamlit.components.v1 as components
 import requests
 import time
 
-# Page Configuration
+# Page Configuration (Sets the browser tab and mobile bookmark name)
 st.set_page_config(
-    page_title="Marcus Weather Command", 
+    page_title="Marcus Weather", 
     page_icon="📡",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- MODERN WEATHER CONSOLE CUSTOM CSS ---
+# --- MODERN WEATHER CONSOLE CUSTOM CSS & MOBILE META TAGS ---
 st.markdown("""
+<head>
+    <meta name="apple-mobile-web-app-title" content="Marcus Weather">
+    <meta name="application-name" content="Marcus Weather">
+</head>
 <style>
     /* Dark console background theme & global font adjustments */
     .stApp {
@@ -195,7 +199,7 @@ st.markdown("""
 # --- REPEATER ANNOUNCEMENT BANNER ---
 st.markdown("""
 <div class="repeater-card">
-    <strong>📻 GMRS REPEATER GOING ACTIVE 12/01/2026:</strong> Tune into <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong> — Open for local use!
+    <strong>📻 GMRS REPEATER ACTIVE:</strong> Tune into <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong> — Open for local use!
 </div>
 """, unsafe_allow_html=True)
 

@@ -205,7 +205,7 @@ st.markdown("""
 st.markdown("""
 <div class="welcome-card">
     👋 <strong>Welcome to the Marcus Weather Command!</strong><br> 
-    This is your centralized dashboard for real-time local weather updates, Doppler radar, and community radio operations. Keep this app open for continuous severe weather monitoring. Stay safe and informed!
+    This is your centralized dashboard for real-time local weather updates, and live doplar radar. Keep this app open for continuous severe weather monitoring. Stay safe and informed!
 </div>
 """, unsafe_allow_html=True)
 
@@ -370,8 +370,4 @@ st.markdown("""
 <div style="text-align: center; color: #94a3b8; font-size: 0.95rem; padding-top: 30px; padding-bottom: 20px;">
     <hr style="border: none; border-top: 1px solid #334155; margin-bottom: 20px;">
     💻 View the source code or contribute on 
-    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: bold;">
-        GitHub
-    </a>
-</div>
-""", unsafe_allow_html=True)
+    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #38bdf8; text-decoration: none;

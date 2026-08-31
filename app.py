@@ -46,6 +46,19 @@ st.markdown("""
         margin-top: 4px;
     }
 
+    /* Welcome Message Styling */
+    .welcome-card {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-left: 5px solid #38bdf8;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        color: #f1f5f9;
+        font-size: 1.05rem;
+        line-height: 1.5;
+    }
+
     /* Radio Repeater Box */
     .repeater-card {
         background: rgba(14, 165, 233, 0.1);
@@ -143,25 +156,20 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- MOBILE KEEP-ALIVE & AUTO-RECONNECT WATCHDOG ---
-# Prevents mobile phones from losing connection or showing stale data after screen sleep/app switching
 components.html("""
 <script>
-    // Watch for tab visibility change (e.g. unlocking phone or switching back to app)
     document.addEventListener("visibilitychange", function() {
         if (document.visibilityState === "visible") {
-            // Force reload if screen re-activates to ensure fresh data connection
             window.parent.location.reload();
         }
     });
-
-    // Fallback timer: reload every 10 minutes to clean up lingering browser memory
     setTimeout(function() {
         window.parent.location.reload();
     }, 600000);
 </script>
 """, height=0, width=0)
 
-# NWS API Headers (With anti-cache and timeout safety)
+# NWS API Headers
 headers = {
     "User-Agent": "MarcusWeatherDashboard/1.0 (contact@example.com)",
     "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -176,6 +184,14 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# --- WELCOME MESSAGE ---
+st.markdown("""
+<div class="welcome-card">
+    👋 <strong>Welcome to the Marcus Weather Command!</strong><br> 
+    This is your centralized dashboard for real-time local weather updates, Doppler radar, and community radio operations. Keep this app open for continuous severe weather monitoring. Stay safe and informed!
+</div>
+""", unsafe_allow_html=True)
+
 # --- REPEATER ANNOUNCEMENT BANNER ---
 st.markdown("""
 <div class="repeater-card">
@@ -187,7 +203,6 @@ st.markdown("""
 # ==========================================
 # --- CONTINUOUSLY REFRESHING FRAGMENT ---
 # ==========================================
-# Re-runs automatically every 60 seconds (1 minute)
 @st.fragment(run_every=60)
 def load_live_weather():
 
@@ -330,3 +345,16 @@ def load_live_weather():
 
 # Execute auto-refresh fragment
 load_live_weather()
+
+# ==========================================
+# --- GITHUB REPOSITORY LINK FOOTER ---
+# ==========================================
+st.markdown("""
+<div style="text-align: center; color: #94a3b8; font-size: 0.95rem; padding-top: 30px; padding-bottom: 20px;">
+    <hr style="border: none; border-top: 1px solid #334155; margin-bottom: 20px;">
+    💻 View the source code or contribute on 
+    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: bold;">
+        GitHub
+    </a>
+</div>
+""", unsafe_allow_html=True)

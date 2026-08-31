@@ -225,7 +225,7 @@ components.html("""
 st.markdown("""
 <div class="hero-banner">
     <div class="hero-title">📡 Marcus Weather Command</div>
-    <div class="hero-subtitle">Real-time NWS Telemetry & Regional GMRS Radio Operations • Cherokee County, IA</div>
+    <div class="hero-subtitle">Real-time NWS Radar & Reliable Communications • Cherokee County, IA</div>
 </div>
 """, unsafe_allow_html=True)
 

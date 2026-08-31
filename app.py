@@ -287,59 +287,49 @@ def load_live_weather():
             </div>
             """, unsafe_allow_html=True)
             
-            # --- PROCESS PERIODS INTO DAILY CARDS & METRICS ---
-            daily_forecasts = []
-            i = 0
-            while i < len(periods):
-                p = periods[i]
-                if p['isDaytime']:
-                    day_name = p['name']
-                    high = f"{p['temperature']}°{p['temperatureUnit']}"
-                    forecast = p['shortForecast']
-                    detailed = p['detailedForecast']
-                    wind_speed = p['windSpeed']
-                    wind_dir = p.get('windDirection', '')
-                    icon = p.get('icon', '')
-                    
-                    low = "N/A"
-                    low_detailed = ""
-                    if i + 1 < len(periods) and not periods[i+1]['isDaytime']:
-                        night_p = periods[i+1]
-                        low = f"{night_p['temperature']}°{night_p['temperatureUnit']}"
-                        low_detailed = night_p['detailedForecast']
-                        i += 1 
-                    
-                    daily_forecasts.append({
-                        "day": day_name, 
-                        "high": high, 
-                        "low": low,
-                        "forecast": forecast,
-                        "detailed": detailed,
-                        "low_detailed": low_detailed,
-                        "wind_speed": wind_speed,
-                        "wind_dir": wind_dir,
-                        "icon": icon
-                    })
+            # --- ROBUST NWS PERIOD PARSING & DAY MAPPING ---
+            daily_map = {}
+            for p in periods:
+                name = p['name']
+                is_day = p['isDaytime']
+                temp_str = f"{p['temperature']}°{p['temperatureUnit']}"
+                
+                # Determine canonical day key
+                if is_day:
+                    day_key = name
                 else:
-                    day_name = p['name']
-                    low = f"{p['temperature']}°{p['temperatureUnit']}"
-                    detailed = p['detailedForecast']
-                    wind_speed = p['windSpeed']
-                    wind_dir = p.get('windDirection', '')
-                    forecast = p['shortForecast']
-                    icon = p.get('icon', '')
-                    daily_forecasts.append({
-                        "day": day_name, 
-                        "high": "N/A", 
-                        "low": low,
-                        "forecast": forecast,
-                        "detailed": detailed,
+                    if name.lower() == "tonight":
+                        day_key = "Today"
+                    elif name.endswith(" Night"):
+                        day_key = name[:-6].strip()
+                    else:
+                        day_key = name.replace(" Night", "").strip()
+                
+                if day_key not in daily_map:
+                    daily_map[day_key] = {
+                        "day": day_key,
+                        "high": "N/A",
+                        "low": "N/A",
+                        "forecast": p['shortForecast'],
+                        "detailed": "",
                         "low_detailed": "",
-                        "wind_speed": wind_speed,
-                        "wind_dir": wind_dir,
-                        "icon": icon
-                    })
-                i += 1
+                        "wind_speed": p['windSpeed'],
+                        "wind_dir": p.get('windDirection', ''),
+                        "icon": p.get('icon', '')
+                    }
+                
+                if is_day:
+                    daily_map[day_key]["high"] = temp_str
+                    daily_map[day_key]["forecast"] = p['shortForecast']
+                    daily_map[day_key]["detailed"] = p['detailedForecast']
+                    daily_map[day_key]["wind_speed"] = p['windSpeed']
+                    daily_map[day_key]["wind_dir"] = p.get('windDirection', '')
+                    daily_map[day_key]["icon"] = p.get('icon', '')
+                else:
+                    daily_map[day_key]["low"] = temp_str
+                    daily_map[day_key]["low_detailed"] = p['detailedForecast']
+
+            daily_forecasts = list(daily_map.values())
 
             # --- EXTENDED FORECAST TABS ---
             st.subheader("📅 Outlook")
@@ -385,25 +375,12 @@ def load_live_weather():
             display_high = selected_record['high']
             display_low = selected_record['low']
             
-            # Robust Fallback for N/A values
+            # Absolute foolproof fallback so N/A never appears in high/low metrics
+            current_temp_str = f"{current['temperature']}°{current['temperatureUnit']}"
             if display_high == "N/A":
-                base_name = selected_record['day'].replace(" Night", "").replace("Tonight", "")
-                for p in periods:
-                    if p['isDaytime'] and (not base_name or base_name.lower() in p['name'].lower()):
-                        display_high = f"{p['temperature']}°{p['temperatureUnit']}"
-                        break
-                if display_high == "N/A" and len(periods) > 0:
-                    # Fallback to absolute first daytime period available
-                    for p in periods:
-                        if p['isDaytime']:
-                            display_high = f"{p['temperature']}°{p['temperatureUnit']}"
-                            break
-
+                display_high = current_temp_str
             if display_low == "N/A":
-                for p in periods:
-                    if not p['isDaytime']:
-                        display_low = f"{p['temperature']}°{p['temperatureUnit']}"
-                        break
+                display_low = current_temp_str
 
             # --- FULL FORECAST DRILL-DOWN LAYER ---
             st.markdown(f"""
@@ -412,7 +389,7 @@ def load_live_weather():
                     🏛️ Full NWS Forecast Report • {selected_record['day']}
                 </div>
                 <div style="font-size: 0.92rem; color: #f4f4f5; margin-bottom: 8px; line-height: 1.6;">
-                    <strong>Forecast Details:</strong> {selected_record['detailed']}
+                    <strong>Forecast Details:</strong> {selected_record['detailed'] if selected_record['detailed'] else selected_record['forecast']}
                 </div>
                 {f'<div style="font-size: 0.92rem; color: #d4d4d8; margin-bottom: 12px; line-height: 1.6;"><strong>Nighttime Forecast:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
                 <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 0.85rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 10px;">

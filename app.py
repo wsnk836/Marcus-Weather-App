@@ -235,11 +235,12 @@ def load_live_weather():
         "Accept": "application/geo+json"
     }
 
-    # --- INITIALIZE SESSION STATE ---
+    # --- INITIALIZE SESSION STATE WITH QUERY PARAM PERSISTENCE ---
     if "selected_forecast_day" not in st.session_state:
         st.session_state.selected_forecast_day = None
     if "enable_push_alerts" not in st.session_state:
-        st.session_state.enable_push_alerts = False
+        param_val = st.query_params.get("push_alerts", "false")
+        st.session_state.enable_push_alerts = (str(param_val).lower() == "true")
 
     # --- ACTIVE SEVERE WEATHER ALERTS ---
     st.markdown('<div id="alerts-sec"></div>', unsafe_allow_html=True)
@@ -248,7 +249,10 @@ def load_live_weather():
     with col_alert_header:
         st.subheader("⚠️ Active NWS Weather Alerts")
     with col_alert_toggle:
-        st.session_state.enable_push_alerts = st.toggle("🔔 Push Alerts", value=st.session_state.enable_push_alerts, help="Enable browser push notifications when severe weather is active.")
+        push_val = st.toggle("🔔 Push Alerts", value=st.session_state.enable_push_alerts, help="Enable browser push notifications when severe weather is active.")
+        if push_val != st.session_state.enable_push_alerts:
+            st.session_state.enable_push_alerts = push_val
+            st.query_params["push_alerts"] = str(push_val).lower()
 
     try:
         alerts_url = "https://api.weather.gov/alerts/active?point=42.8242,-95.7994"

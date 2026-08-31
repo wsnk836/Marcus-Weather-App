@@ -454,7 +454,7 @@ def load_live_weather():
         st.subheader("📻 Community News")
         st.markdown("""
         <div class="command-card repeater-card">
-            <strong>GMRS REPEATER ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
+            <strong>GMRS REPEATER GOING ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
         </div>
         """, unsafe_allow_html=True)
 

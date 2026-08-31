@@ -182,30 +182,32 @@ st.markdown("""
         transform: translateY(-2px);
     }
 
-    /* Forecast Icons Styling - Expanded & Reflective */
+    /* Forecast Icons Styling - Expanded to Fit Column Width Fully */
     .digital-icon-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        margin: 12px 0;
+        margin: 10px 0;
+        width: 100%;
     }
     
     .digital-icon {
-        width: 80px;
-        height: 80px;
-        max-width: 100%;
-        border-radius: 14px;
+        width: 100%;
+        max-width: 130px;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        border-radius: 12px;
         background: radial-gradient(circle, #22242c 0%, #121316 100%);
         border: 1px solid #3f3f46;
-        padding: 8px;
+        padding: 10px;
         object-fit: contain;
         display: block;
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
         transition: transform 0.2s ease, border-color 0.2s ease;
     }
 
     .digital-icon:hover {
-        transform: scale(1.08);
+        transform: scale(1.05);
         border-color: #ef4444;
     }
 
@@ -239,8 +241,7 @@ st.markdown("""
             font-size: 1.4rem;
         }
         .digital-icon {
-            width: 65px;
-            height: 65px;
+            max-width: 90px;
         }
     }
 </style>
@@ -284,375 +285,3 @@ components.html("""
         if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-    }
-</script>
-""", height=60, scrolling=False)
-
-
-def get_enhanced_icon_url(raw_url: str) -> str:
-    """Upgrades NWS icon URL resolution to large format for maximum clarity."""
-    if not raw_url:
-        return ""
-    if "?size=" in raw_url:
-        return raw_url.split("?")[0] + "?size=large"
-    elif "?" in raw_url:
-        return raw_url + "&size=large"
-    return raw_url + "?size=large"
-
-
-# ==========================================
-# --- CONTINUOUSLY REFRESHING FRAGMENT ---
-# ==========================================
-@st.fragment(run_every=60)
-def load_live_weather():
-    headers = {
-        "User-Agent": "MarcusWeatherApp (wsnk836@gmail.com)",
-        "Accept": "application/geo+json"
-    }
-
-    # --- ACTIVE SEVERE WEATHER ALERTS (Positioned Above Current Conditions) ---
-    st.markdown('<div id="alerts-sec"></div>', unsafe_allow_html=True)
-    st.subheader("⚠️ Active NWS Weather Alerts")
-    try:
-        alerts_url = "https://api.weather.gov/alerts/active?point=42.8242,-95.7994"
-        alerts_response = requests.get(alerts_url, headers=headers, timeout=10).json()
-        alerts = alerts_response.get("features", [])
-        
-        if len(alerts) > 0:
-            for alert in alerts:
-                props = alert.get("properties", {})
-                event = props.get("event", "Weather Alert")
-                headline = props.get("headline", "Severe weather alert issued.")
-                description = props.get("description", "No description provided.")
-                severity = props.get("severity", "Unknown")
-                
-                status_color = "#ef4444" if severity in ["Extreme", "Severe"] else "#f87171"
-                
-                st.markdown(f"""
-                <div class="alert-card-severe" style="border-left-color: {status_color};">
-                    <strong style="color: {status_color};">🚨 {event}</strong><br/>
-                    <span style="color: #f4f4f5; font-size: 0.9rem; margin-top: 4px; display: block;">{headline}</span>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                with st.expander("📄 View Full Warning Statement"):
-                    st.write(description)
-        else:
-            st.markdown("""
-            <div class="alert-card-clear">
-                🟢 <strong>All Clear:</strong> No active warnings or advisories for Marcus, IA.
-            </div>
-            """, unsafe_allow_html=True)
-            
-    except Exception as e:
-        st.error(f"Could not reach NWS alert servers: {e}")
-
-    st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
-
-    # --- TWO-COLUMN DASHBOARD LAYOUT ---
-    col_left, col_right = st.columns([1.1, 1], gap="large")
-
-    with col_left:
-        # --- CURRENT CONDITIONS & METRICS ---
-        st.markdown('<div id="conditions-sec"></div>', unsafe_allow_html=True)
-        st.subheader("🌦️ Current Conditions")
-        try:
-            points_url = "https://api.weather.gov/points/42.8242,-95.7994"
-            points_response = requests.get(points_url, headers=headers, timeout=10).json()
-            forecast_url = points_response["properties"]["forecast"]
-            
-            forecast_response = requests.get(forecast_url, headers=headers, timeout=10).json()
-            periods = forecast_response["properties"]["periods"]
-            
-            current = periods[0]
-            
-            # Current Metric Row
-            m1, m2, m3 = st.columns(3)
-            with m1:
-                st.metric("🌡️ Temp", f"{current['temperature']}°{current['temperatureUnit']}")
-            with m2:
-                st.metric("💨 Wind", f"{current['windSpeed']}")
-            with m3:
-                st.metric("☁️ Sky", current['shortForecast'])
-            
-            st.markdown(f"""
-            <div style="background: #121316; border: 1px solid #27272a; border-radius: 10px; padding: 12px 16px; margin: 12px 0 20px 0; color: #d4d4d8; font-size: 0.92rem;">
-                <strong>📋 Summary:</strong> {current['detailedForecast']}
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # --- PROCESS PERIODS INTO DAILY CARDS ---
-            daily_forecasts = []
-            i = 0
-            while i < len(periods):
-                p = periods[i]
-                if p['isDaytime']:
-                    day_name = p['name']
-                    high = f"{p['temperature']}°{p['temperatureUnit']}"
-                    forecast = p['shortForecast']
-                    icon = get_enhanced_icon_url(p.get('icon', ''))
-                    
-                    low = "N/A"
-                    if i + 1 < len(periods) and not periods[i+1]['isDaytime']:
-                        low = f"{periods[i+1]['temperature']}°{periods[i+1]['temperatureUnit']}"
-                        i += 1  
-                    
-                    daily_forecasts.append({
-                        "day": day_name, "high": high, "low": low,
-                        "forecast": forecast, "icon": icon
-                    })
-                else:
-                    day_name = p['name']
-                    low = f"{p['temperature']}°{p['temperatureUnit']}"
-                    forecast = p['shortForecast']
-                    icon = get_enhanced_icon_url(p.get('icon', ''))
-                    daily_forecasts.append({
-                        "day": day_name, "high": "N/A", "low": low,
-                        "forecast": forecast, "icon": icon
-                    })
-                i += 1
-
-            # --- EXTENDED FORECAST TABS ---
-            st.subheader("📅 Outlook")
-            tab3, tab7 = st.tabs(["3-Day", "7-Day"])
-            
-            with tab3:
-                st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
-                days_to_show = daily_forecasts[:3]
-                cols3 = st.columns(len(days_to_show))
-                for idx, day_data in enumerate(days_to_show):
-                    with cols3[idx]:
-                        with st.container(border=True):
-                            st.markdown(f"**{day_data['day']}**")
-                            if day_data['icon']:
-                                st.markdown(f"""
-                                <div class="digital-icon-container">
-                                    <img src="{day_data['icon']}" class="digital-icon" alt="{day_data['forecast']}" title="{day_data['forecast']}" />
-                                </div>
-                                """, unsafe_allow_html=True)
-                            st.caption(f"H: {day_data['high']} | L: {day_data['low']}")
-                            st.caption(day_data['forecast'])
-
-            with tab7:
-                st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
-                days_to_show = daily_forecasts[:7]
-                cols7 = st.columns(len(days_to_show))
-                for idx, day_data in enumerate(days_to_show):
-                    with cols7[idx]:
-                        with st.container(border=True):
-                            st.markdown(f"**{day_data['day']}**")
-                            if day_data['icon']:
-                                st.markdown(f"""
-                                <div class="digital-icon-container">
-                                    <img src="{day_data['icon']}" class="digital-icon" alt="{day_data['forecast']}" title="{day_data['forecast']}" />
-                                </div>
-                                """, unsafe_allow_html=True)
-                            st.caption(f"H: {day_data['high']} | L: {day_data['low']}")
-                            st.caption(day_data['forecast'])
-
-        except Exception as e:
-            st.error(f"Could not load NWS forecast telemetry: {e}")
-
-        st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
-
-        # --- LIVE RADAR LOOP ---
-        st.markdown('<div id="radar-sec"></div>', unsafe_allow_html=True)
-        st.subheader("📡 Live Doppler Radar (KFSD)")
-        cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
-        st.caption(f"🔄 Sync active • {cst_time}")
-        radar_url = f"https://radar.weather.gov/ridge/standard/KFSD_loop.gif?t={int(time.time())}"
-        with st.container(border=True):
-            st.image(radar_url, use_container_width=True)
-
-    with col_right:
-        # --- WELCOME CARD ---
-        st.markdown("""
-        <div class="command-card welcome-card">
-            👋 <strong>Welcome to Marcus Weather Command.</strong> Your centralized operational dashboard for live local meteorological telemetry, high-definition Doppler radar loops, and emergency alerts. Keep this app active for continuous monitoring.
-        </div>
-        """, unsafe_allow_html=True)
-
-        # --- COMMUNITY NEWS SECTION ---
-        st.markdown('<div id="news-sec"></div>', unsafe_allow_html=True)
-        st.subheader("📻 Community News")
-        st.markdown("""
-        <div class="command-card repeater-card">
-            <strong>GMRS REPEATER ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
-        </div>
-        """, unsafe_allow_html=True)
-
-        # --- INSTALL SECTION ---
-        st.markdown('<div id="install-sec"></div>', unsafe_allow_html=True)
-        st.subheader("📲 Install")
-        st.markdown("""
-        <div class="command-card install-card">
-            <strong>Add & Rename to Home Screen:</strong> Install this dashboard on your mobile device:<br/>
-            • <strong>iOS (Safari):</strong> Tap <strong>Share</strong>, select <strong>"Add to Home Screen"</strong>, rename it to <strong>"Marcus Weather"</strong>, and tap <strong>Add</strong>.<br/>
-            • <strong>Android (Chrome):</strong> Tap the <strong>Menu</strong> (three dots), select <strong>"Add to Home screen"</strong> (or "Install app"), rename the shortcut to <strong>"Marcus Weather"</strong>, and confirm.
-        </div>
-        """, unsafe_allow_html=True)
-
-
-# Execute auto-refresh telemetry fragment
-load_live_weather()
-
-# ==========================================
-# --- COMMUNITY FEEDBACK AND SUGGESTIONS HTML FORM ---
-# ==========================================
-st.markdown('<div id="feedback-sec"></div>', unsafe_allow_html=True)
-st.markdown("<div style='margin: 30px 0 15px 0;'></div>", unsafe_allow_html=True)
-st.subheader("💬 Community Feedback and Suggestions")
-st.markdown("<p style='color: #a1a1aa; font-size: 0.92rem;'>Send your feedback and suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
-
-components.html("""
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body {
-            background-color: transparent;
-            color: #f4f4f5;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .form-group {
-            margin-bottom: 12px;
-        }
-        .row {
-            display: flex;
-            gap: 12px;
-        }
-        .col {
-            flex: 1;
-        }
-        label {
-            display: block;
-            font-size: 0.82rem;
-            color: #a1a1aa;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-        input, textarea {
-            width: 100%;
-            background-color: #121316;
-            border: 1px solid #27272a;
-            border-radius: 8px;
-            color: #f4f4f5;
-            padding: 10px 12px;
-            font-size: 0.92rem;
-            box-sizing: border-box;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        input:focus, textarea:focus {
-            border-color: #ef4444;
-        }
-        textarea {
-            resize: vertical;
-            height: 80px;
-        }
-        button {
-            background: #ef4444;
-            color: #0c0d10;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-weight: 700;
-            font-size: 0.92rem;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 4px;
-            transition: opacity 0.2s;
-        }
-        button:hover {
-            opacity: 0.9;
-        }
-        #result {
-            margin-top: 8px;
-            font-size: 0.88rem;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-    <form action="https://api.web3forms.com/submit" method="POST" id="web3form">
-        <input type="hidden" name="access_key" value="6f59571f-f519-4655-9b50-095eed178152">
-        <input type="hidden" name="subject" value="💡 Community Feedback and Suggestions from Marcus Command">
-        
-        <div class="row">
-            <div class="col form-group">
-                <label>Name *</label>
-                <input type="text" name="name" placeholder="Your Name" required>
-            </div>
-            <div class="col form-group">
-                <label>Location / Grid (Optional)</label>
-                <input type="text" name="location" placeholder="Marcus, IA">
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label>Your Feedback and Suggestions *</label>
-            <textarea name="message" placeholder="Enter your feedback or suggestions here..." required></textarea>
-        </div>
-        
-        <input type="checkbox" name="botcheck" style="display: none;">
-
-        <button type="submit" id="submit-btn">Send Community Feedback and Suggestions</button>
-        <div id="result"></div>
-    </form>
-
-    <script>
-        const form = document.getElementById('web3form');
-        const result = document.getElementById('result');
-
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const object = Object.fromEntries(formData);
-            const json = JSON.stringify(object);
-            result.style.color = "#a1a1aa";
-            result.innerHTML = "Sending feedback...";
-
-            fetch('https://api.web3forms.com/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: json
-            })
-            .then(async (response) => {
-                let jsonResponse = await response.json();
-                if (response.status == 200) {
-                    result.style.color = "#10b981";
-                    result.innerHTML = "✅ Feedback and suggestions sent directly to wsnk836@gmail.com!";
-                    form.reset();
-                } else {
-                    result.style.color = "#ef4444";
-                    result.innerHTML = jsonResponse.message || "Something went wrong!";
-                }
-            })
-            .catch(error => {
-                result.style.color = "#ef4444";
-                result.innerHTML = "Network connection error!";
-            });
-        });
-    </script>
-</body>
-</html>
-""", height=270, scrolling=False)
-
-# ==========================================
-# --- GITHUB REPOSITORY LINK FOOTER ---
-# ==========================================
-st.markdown("""
-<div style="text-align: center; color: #71717a; font-size: 0.88rem; padding-top: 20px; padding-bottom: 15px;">
-    <hr style="border: none; border-top: 1px solid #27272a; margin-bottom: 15px;">
-    💻 Source code available on 
-    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #f87171; text-decoration: none; font-weight: 600;">
-        GitHub
-    </a>
-</div>
-""", unsafe_allow_html=True)

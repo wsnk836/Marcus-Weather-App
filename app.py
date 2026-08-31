@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as requests_comp
 import requests
 import time
 from datetime import datetime
@@ -11,6 +12,19 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# --- AUTOMATIC MOBILE & BROWSER NAMING ---
+requests_comp.html("""
+<script>
+    try {
+        window.parent.document.title = "Weather Command";
+        let metaApple = window.parent.document.createElement('meta');
+        metaApple.name = "apple-mobile-web-app-title";
+        metaApple.content = "Weather Radar";
+        window.parent.document.head.appendChild(metaApple);
+    } catch(e) {}
+</script>
+""", height=0, width=0)
 
 # --- TACTICAL CRIMSON & CARBON CSS ---
 st.markdown("""
@@ -58,6 +72,17 @@ st.markdown("""
         line-height: 1.5;
     }
     .welcome-card { border-left: 4px solid #ef4444; }
+    .permission-box {
+        background: #18191f;
+        border: 1px solid #27272a;
+        border-top: 3px solid #38bdf8;
+        border-radius: 14px;
+        padding: 35px;
+        text-align: center;
+        max-width: 600px;
+        margin: 40px auto;
+        box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.7);
+    }
     .alert-card-severe {
         background: rgba(239, 68, 68, 0.12);
         border: 1px solid rgba(239, 68, 68, 0.3);
@@ -164,29 +189,89 @@ st.markdown("""
 st.markdown("""
 <div class="hero-banner">
     <div class="hero-title">📡 Weather Command</div>
-    <div class="hero-subtitle">Real-time NWS Telemetry & Auto-Detected Location Radar</div>
+    <div class="hero-subtitle">Real-time NWS Telemetry & Live Device Geolocation</div>
 </div>
 """, unsafe_allow_html=True)
 
-# --- AUTOMATIC IP GEOLOCATION DETECTION ---
 query_params = st.query_params
+user_lat = query_params.get("lat")
+user_lon = query_params.get("lon")
 
-if "lat" not in query_params or "lon" not in query_params:
-    try:
-        ip_resp = requests.get("https://ipapi.co/json/", timeout=3).json()
-        lat_val = float(ip_resp.get("latitude", 41.8781))
-        lon_val = float(ip_resp.get("longitude", -87.6298))
-    except Exception:
-        lat_val, lon_val = 41.8781, -87.6298  # Default fallback (Chicago)
-    
-    st.query_params["lat"] = str(lat_val)
-    st.query_params["lon"] = str(lon_val)
+# If GPS coordinates are not yet provided, show the explicit permission request component
+if not user_lat or not user_lon:
+    st.markdown("""
+    <div class="permission-box">
+        <h2 style="color: #f87171; margin-bottom: 12px;">📍 Device Location Required</h2>
+        <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin-bottom: 25px;">
+            Click below to grant device location access. This ensures your exact GPS coordinates are mapped to the radar and local NWS weather station.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        requests_comp.html("""
+        <div style="text-align: center;">
+            <button onclick="requestDeviceLocation()" style="
+                background-color: #ef4444; 
+                color: white; 
+                border: none; 
+                padding: 14px 28px; 
+                font-size: 1.05rem; 
+                font-weight: 700; 
+                border-radius: 8px; 
+                cursor: pointer;
+                box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+                width: 100%;
+            ">
+                📍 Share Device Location
+            </button>
+        </div>
+        <script>
+            function requestDeviceLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const lat = position.coords.latitude;
+                            const lon = position.coords.longitude;
+                            const url = new URL(window.location.href);
+                            url.searchParams.set('lat', lat);
+                            url.searchParams.set('lon', lon);
+                            window.location.href = url.toString();
+                        },
+                        (error) => {
+                            alert("Location access denied or unavailable. Please check your browser permissions.");
+                            console.warn("Geolocation error: ", error.message);
+                        },
+                        { timeout: 10000, maximumAge: 0, enableHighAccuracy: true }
+                    );
+                } else {
+                    alert("Geolocation is not supported by your browser.");
+                }
+            }
+            // Auto-trigger prompt on load
+            window.onload = function() {
+                setTimeout(requestDeviceLocation, 500);
+            };
+        </script>
+        """, height=80)
+
+        with st.expander("📍 Or Enter Coordinates Manually"):
+            with st.form("manual_coord_form"):
+                man_lat = st.number_input("Latitude", value=41.8781, format="%.4f")
+                man_lon = st.number_input("Longitude", value=-87.6298, format="%.4f")
+                if st.form_submit_button("Load Location"):
+                    st.query_params["lat"] = str(man_lat)
+                    st.query_params["lon"] = str(man_lon)
+                    st.rerun()
+    st.stop()
 
 try:
-    lat = float(query_params.get("lat"))
-    lon = float(query_params.get("lon"))
+    lat = float(user_lat)
+    lon = float(user_lon)
 except ValueError:
-    lat, lon = 41.8781, -87.6298
+    st.error("Invalid coordinates provided.")
+    st.stop()
 
 @st.fragment(run_every=60)
 def load_live_weather(lat, lon):
@@ -355,7 +440,7 @@ def load_live_weather(lat, lon):
 
         st.subheader(f"📡 Live Doppler Radar ({radar_station})")
         cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
-        st.caption(f"🔄 Sync active • {cst_time} • 📍 Location anchored to ({lat:.4f}, {lon:.4f})")
+        st.caption(f"🔄 Sync active • {cst_time} • 📍 Device location anchored to ({lat:.4f}, {lon:.4f})")
         
         radar_url = f"https://radar.weather.gov/ridge/standard/{radar_station}_loop.gif?t={int(time.time())}"
         
@@ -364,7 +449,7 @@ def load_live_weather(lat, lon):
             <img src="{radar_url}" class="radar-img" alt="Radar Loop">
             <div class="user-pin-container">
                 <div class="user-dot"></div>
-                <div class="user-label">Your Location</div>
+                <div class="user-label">Your Device Location</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -372,13 +457,13 @@ def load_live_weather(lat, lon):
     with col_right:
         st.markdown("""
         <div class="command-card welcome-card">
-            👋 <strong>Location Synchronized.</strong> This dashboard automatically locks your radar pin and fetches local NWS advisories based on your network coordinates.
+            👋 <strong>Device GPS Locked.</strong> Your browser GPS coordinates are actively anchoring the radar pin and NWS warning feeds.
         </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("📍 Change Location")
+        st.subheader("📍 Location Override")
         with st.form("coord_form"):
-            st.write("Manually adjust coordinates to jump to any area:")
+            st.write("Manually adjust coordinates if needed:")
             manual_lat = st.number_input("Latitude", value=lat, format="%.4f")
             manual_lon = st.number_input("Longitude", value=lon, format="%.4f")
             submitted = st.form_submit_button("Update Location")

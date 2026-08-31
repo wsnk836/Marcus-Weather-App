@@ -1,249 +1,88 @@
-from datetime import datetime, timedelta
-import time
-from zoneinfo import ZoneInfo
-import requests
 import streamlit as st
-import streamlit.components.v1 as components
+import requests
 
 # Page Configuration
-st.set_page_config(
-    page_title="Marcus Weather Command",
-    page_icon="📡",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
+st.set_page_config(page_title="Weather & Radio Dashboard", layout="wide")
+st.title("📻 Weather & Radio Dashboard")
 
-# --- BROWSER LOCALSTORAGE BRIDGE (PUSH NOTIFICATIONS REMOVED) ---
-localStorage_sync_code = """
-<script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasParams = urlParams.has('lat');
-
-    if (hasParams) {
-        if (urlParams.has('lat')) localStorage.setItem('nws_lat', urlParams.get('lat'));
-        if (urlParams.has('lon')) localStorage.setItem('nws_lon', urlParams.get('lon'));
-        if (urlParams.has('loc_name')) localStorage.setItem('nws_loc_name', urlParams.get('loc_name'));
-        sessionStorage.setItem('nws_synced', 'true');
-    } else {
-        const alreadySynced = sessionStorage.getItem('nws_synced');
-        
-        if (!alreadySynced) {
-            const savedLat = localStorage.getItem('nws_lat');
-            const savedLon = localStorage.getItem('nws_lon');
-            const savedLoc = localStorage.getItem('nws_loc_name');
-
-            if (savedLat) {
-                const lat = savedLat || '42.8242';
-                const lon = savedLon || '-95.7994';
-                const loc = savedLoc || 'Marcus, IA';
-                
-                sessionStorage.setItem('nws_synced', 'true');
-                
-                const newUrl = window.location.pathname + `?lat=${lat}&lon=${lon}&loc_name=${encodeURIComponent(loc)}`;
-                
-                if (window.top && window.top.history && window.top.history.replaceState) {
-                    window.top.history.replaceState(null, '', newUrl);
-                    window.top.location.href = newUrl;
-                }
-            } else {
-                sessionStorage.setItem('nws_synced', 'true');
-            }
-        }
-    }
-</script>
-"""
-components.html(localStorage_sync_code, height=0)
-
-# --- TACTICAL CRIMSON & CARBON CSS ---
-st.markdown(
-    """
-<style>
-    .stApp {
-        background-color: #0c0d10;
-        color: #f4f4f5;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    .hero-banner {
-        background: linear-gradient(145deg, #18191f 0%, #0e0f12 100%);
-        border: 1px solid #27272a;
-        border-top: 3px solid #ef4444;
-        border-radius: 14px;
-        padding: 22px 28px;
-        margin-bottom: 16px;
-        box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.7);
-    }
-    .hero-title {
-        font-size: 2rem;
-        font-weight: 800;
-        color: #f87171;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        letter-spacing: -0.02em;
-    }
-    .hero-subtitle {
-        color: #a1a1aa;
-        font-size: 0.92rem;
-        margin-top: 6px;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        font-weight: 500;
-    }
-    .command-card {
-        background: #121316;
-        border: 1px solid #27272a;
-        border-radius: 12px;
-        padding: 16px 20px;
-        margin-bottom: 16px;
-        color: #e4e4e7;
-        font-size: 0.96rem;
-        line-height: 1.5;
-    }
-    .welcome-card { border-left: 4px solid #ef4444; }
-    .repeater-card {
-        background: rgba(239, 68, 68, 0.05);
-        border: 1px solid rgba(239, 68, 68, 0.2);
-        border-left: 4px solid #f87171;
-        color: #fee2e2;
-    }
-    .install-card { border-left: 4px solid #38bdf8; color: #d4d4d8; font-size: 0.9rem; }
-    .alert-card-severe {
-        background: rgba(239, 68, 68, 0.12);
-        border: 1px solid rgba(239, 68, 68, 0.3);
-        border-left: 4px solid #ef4444;
-        border-radius: 10px;
-        padding: 14px 18px;
-        margin-bottom: 12px;
-    }
-    .alert-card-clear {
-        background: rgba(16, 185, 129, 0.08);
-        border: 1px solid rgba(16, 185, 129, 0.25);
-        border-left: 4px solid #10b981;
-        border-radius: 10px;
-        padding: 14px 18px;
-        margin-bottom: 12px;
-        color: #d1fae5;
-    }
-    [data-testid="stMetric"] {
-        background: #121316;
-        border: 1px solid #27272a;
-        border-radius: 12px;
-        padding: 14px 18px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-    [data-testid="stMetricLabel"] {
-        font-size: 0.85rem !important;
-        color: #a1a1aa !important;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    [data-testid="stMetricValue"] {
-        font-size: 1.6rem !important;
-        font-weight: 700 !important;
-        color: #fafafa !important;
-    }
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; background-color: transparent; }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 4px 12px;
-        background-color: #121316;
-        border: 1px solid #27272a;
-        color: #a1a1aa;
-        font-weight: 600;
-        font-size: 0.85rem;
-    }
-    .stTabs [aria-selected="true"] {
-        background: #ef4444 !important;
-        color: #0c0d10 !important;
-        border-color: #ef4444 !important;
-        font-weight: 700 !important;
-    }
-    @media (max-width: 768px) {
-        .block-container { padding: 1rem 0.75rem !important; }
-        .hero-title { font-size: 1.4rem; }
-    }
-</style>
-""",
-    unsafe_allow_html=True,
-)
-
-# --- RESOLVE & PERSIST QUERY PARAMS ---
-query_params = st.query_params
-default_lat = "42.8242"
-default_lon = "-95.7994"
-
-lat_str = query_params.get("lat", default_lat)
-lon_str = query_params.get("lon", default_lon)
-location_name = query_params.get("loc_name", "Marcus, IA")
+# 1. Fetch Live Weather Data
+st.header("🌦️ Current Weather Data (Chicago)")
+weather_url = "https://api.open-meteo.com/v1/forecast?latitude=41.85&longitude=-87.65&current_weather=true"
 
 try:
-  ACTIVE_LAT = round(float(lat_str), 4)
-  ACTIVE_LON = round(float(lon_str), 4)
-except ValueError:
-  ACTIVE_LAT = float(default_lat)
-  ACTIVE_LON = float(default_lon)
-  location_name = "Marcus, IA"
+    response = requests.get(weather_url).json()
+    current = response.get("current_weather", {})
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Temperature", f"{current.get('temperature', '--')} °C")
+    col2.metric("Wind Speed", f"{current.get('windspeed', '--')} km/h")
+    col3.metric("Wind Direction", f"{current.get('winddirection', '--')}°")
+except Exception as e:
+    st.error(f"Could not fetch weather data. Error: {e}")
 
-# --- HERO HEADER ---
-st.markdown(
-    """
-<div class="hero-banner">
-    <div class="hero-title">📡 Marcus Weather Command</div>
-    <div class="hero-subtitle">Real-time NWS Telemetry & Regional Operations</div>
-</div>
-""",
-    unsafe_allow_html=True,
-)
+st.markdown("---")
+
+# 2. Embed a Live Radio Stream
+st.header("📡 Live Radio Stream")
+st.write("Currently playing: BBC World Service (Testing Stream)")
+
+# This is a REAL, working streaming URL so you can hear audio
+real_stream_url = "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service" 
+
+st.audio(real_stream_url, format="audio/mp3")
+
+st.markdown("---")
 
 # ==========================================
-# --- ZIP CODE & LOCATION SELECTOR PANEL ---
+# --- NEW COMMUNITY ANNOUNCEMENTS SECTION ---
 # ==========================================
-with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=False):
-  with st.form("zip_search_form"):
-    loc_input = st.text_input(
-        "ZIP Code or City",
-        placeholder="e.g. 51035 or Cherokee, IA",
-        value="" if location_name == "Marcus, IA" else location_name,
+st.header("📢 Community Announcements")
+st.write("Browse current announcements or submit a new notice below.")
+
+if "community_announcements" not in st.session_state:
+    st.session_state.community_announcements = [
+        {
+            "author": "Dashboard Admin",
+            "title": "Welcome to the Community Board",
+            "text": "Feel free to post local notices and announcements using the submission form below.",
+            "time": "Active"
+        }
+    ]
+
+# Display existing announcements
+for ann in st.session_state.community_announcements:
+    st.markdown(
+        f"""
+        <div style="background: #1e1e24; border: 1px solid #3f3f46; border-left: 4px solid #38bdf8; border-radius: 8px; padding: 14px; margin-bottom: 10px;">
+            <strong style="font-size: 1.05rem; color: #f4f4f5;">{ann['title']}</strong><br/>
+            <span style="font-size: 0.9rem; color: #d4d4d8; display: block; margin-top: 4px;">{ann['text']}</span>
+            <span style="font-size: 0.75rem; color: #a1a1aa; display: block; margin-top: 8px; font-style: italic;">Posted by: {ann['author']}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    submitted = st.form_submit_button("Update Location Grid")
 
-    if submitted and loc_input.strip():
-      try:
-        geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(loc_input)}&format=json&countrycodes=us&limit=1"
-        geo_resp = requests.get(
-            geo_url, headers={"User-Agent": "MarcusWeatherApp"}, timeout=5
-        ).json()
-
-        if geo_resp:
-          new_lat = geo_resp[0]["lat"]
-          new_lon = geo_resp[0]["lon"]
-          new_name = geo_resp[0].get("display_name", loc_input).split(",")[0]
-
-          st.query_params["lat"] = new_lat
-          st.query_params["lon"] = new_lon
-          st.query_params["loc_name"] = new_name
-
-          update_js = f"""
-                    <script>
-                        localStorage.setItem('nws_lat', '{new_lat}');
-                        localStorage.setItem('nws_lon', '{new_lon}');
-                        localStorage.setItem('nws_loc_name', '{new_name}');
-                        sessionStorage.setItem('nws_synced', 'true');
-                    </script>
-                    """
-          components.html(update_js, height=0)
-
-          st.success(f"Location locked to: {geo_resp[0].get('display_name')}")
-          time.sleep(0.5)
-          st.rerun()
+# Form to add a new announcement
+with st.form("community_announcement_form"):
+    st.subheader("Post a New Announcement")
+    ann_author = st.text_input("Your Name / Organization *", placeholder="e.g., Neighborhood Watch")
+    ann_title = st.text_input("Announcement Title *", placeholder="e.g., Community Cleanup Event")
+    ann_text = st.text_area("Announcement Details *", placeholder="Enter the details of your announcement here...")
+    
+    ann_submitted = st.form_submit_button("Publish Announcement", use_container_width=True)
+    
+    if ann_submitted:
+        if not ann_author.strip() or not ann_title.strip() or not ann_text.strip():
+            st.error("Please fill in all required fields before publishing.")
         else:
-          st.error(
-              "Location not found. Please try a valid US ZIP code or city name."
-          )
-      except Exception as e:
-        st.error(f"Geocoding connection error: {e}")
-
-
-# ==========================================
-# --- CONTINUOUSLY REFRESHING FRAGMENT ---
+            st.session_state.community_announcements.insert(
+                0,
+                {
+                    "author": ann_author.strip(),
+                    "title": ann_title.strip(),
+                    "text": ann_text.strip(),
+                    "time": "Just now"
+                }
+            )
+            st.success("Announcement published successfully!")
+            st.rerun()

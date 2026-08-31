@@ -168,7 +168,8 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
 
     if submitted and loc_input.strip():
       try:
-        geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(loc_input)}&format=json&limit=1"
+        # Restricted to US to prevent international postal code collisions (e.g., Italy)
+        geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(loc_input)}&format=json&countrycodes=us&limit=1"
         geo_resp = requests.get(
             geo_url, headers={"User-Agent": "MarcusWeatherApp"}, timeout=5
         ).json()

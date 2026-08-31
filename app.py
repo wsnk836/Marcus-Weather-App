@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import streamlit.components.v1 as components
 import requests
@@ -31,181 +30,176 @@ components.html("""
 </script>
 """, height=0, width=0)
 
-# --- MODERNIZED HIGH-CONTRAST CONSOLE CSS ---
+# --- REDESIGNED TACTICAL AMBER & CARBON CSS ---
 st.markdown("""
 <style>
-    /* Global App Styling */
+    /* Global App Styling - Deep Carbon & Amber Phosphor Vibe */
     .stApp {
-        background-color: #070b12;
-        color: #f1f5f9;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #0c0d10;
+        color: #f4f4f5;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     /* Hero Header Banner */
     .hero-banner {
-        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-        border: 1px solid #1e293b;
-        border-radius: 16px;
-        padding: 24px 28px;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+        background: linear-gradient(145deg, #18191f 0%, #0e0f12 100%);
+        border: 1px solid #27272a;
+        border-top: 3px solid #f59e0b;
+        border-radius: 14px;
+        padding: 26px 30px;
+        margin-bottom: 24px;
+        box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.7);
     }
     
     .hero-title {
         font-size: 2.2rem;
         font-weight: 800;
-        background: linear-gradient(90deg, #38bdf8, #818cf8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #fbbf24;
         margin: 0;
         display: flex;
         align-items: center;
         gap: 12px;
+        letter-spacing: -0.02em;
     }
 
     .hero-subtitle {
-        color: #94a3b8;
-        font-size: 1rem;
-        margin-top: 6px;
-        letter-spacing: 0.02em;
+        color: #a1a1aa;
+        font-size: 0.98rem;
+        margin-top: 8px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-weight: 500;
     }
 
     /* Welcome & Notification Cards */
     .welcome-card {
-        background: rgba(30, 41, 59, 0.7);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(51, 65, 85, 0.8);
-        border-left: 4px solid #38bdf8;
-        border-radius: 12px;
+        background: rgba(24, 25, 31, 0.85);
+        border: 1px solid #27272a;
+        border-left: 4px solid #f59e0b;
+        border-radius: 10px;
         padding: 18px 22px;
         margin-bottom: 20px;
-        color: #e2e8f0;
+        color: #e4e4e7;
         font-size: 1.02rem;
         line-height: 1.6;
     }
 
     .repeater-card {
-        background: rgba(14, 165, 233, 0.08);
-        border: 1px solid rgba(56, 189, 248, 0.25);
-        border-left: 4px solid #0ea5e9;
-        border-radius: 12px;
-        padding: 14px 20px;
+        background: rgba(245, 158, 11, 0.06);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-left: 4px solid #fbbf24;
+        border-radius: 10px;
+        padding: 16px 20px;
         margin-bottom: 16px;
-        color: #e0f2fe;
+        color: #fef3c7;
         font-size: 0.95rem;
     }
 
     .install-card {
-        background: rgba(30, 41, 59, 0.5);
-        border: 1px solid rgba(56, 189, 248, 0.15);
-        border-left: 4px solid #818cf8;
-        border-radius: 12px;
-        padding: 14px 20px;
-        margin-bottom: 24px;
-        color: #cbd5e1;
-        font-size: 0.92rem;
+        background: rgba(24, 25, 31, 0.6);
+        border: 1px solid #27272a;
+        border-left: 4px solid #38bdf8;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 28px;
+        color: #d4d4d8;
+        font-size: 0.93rem;
         line-height: 1.5;
     }
 
     /* Alert Banners */
     .alert-card-severe {
-        background: rgba(239, 68, 68, 0.15);
-        border: 1px solid rgba(239, 68, 68, 0.35);
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.3);
         border-left: 4px solid #ef4444;
-        border-radius: 12px;
+        border-radius: 10px;
         padding: 16px 20px;
         margin-bottom: 16px;
     }
 
     .alert-card-clear {
-        background: rgba(34, 197, 94, 0.08);
-        border: 1px solid rgba(34, 197, 94, 0.25);
-        border-left: 4px solid #22c55e;
-        border-radius: 12px;
+        background: rgba(16, 185, 129, 0.08);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        border-left: 4px solid #10b981;
+        border-radius: 10px;
         padding: 14px 20px;
         margin-bottom: 20px;
-        color: #dcfce7;
+        color: #d1fae5;
     }
 
-    /* Metrics Modernization */
+    /* Metrics Styling */
     [data-testid="stMetric"] {
-        background: rgba(15, 23, 42, 0.75);
-        border: 1px solid #1e293b;
-        border-radius: 14px;
-        padding: 16px 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        background: #121316;
+        border: 1px solid #27272a;
+        border-radius: 12px;
+        padding: 18px 22px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
     [data-testid="stMetricLabel"] {
-        font-size: 0.9rem !important;
-        color: #94a3b8 !important;
+        font-size: 0.88rem !important;
+        color: #a1a1aa !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
     [data-testid="stMetricValue"] {
-        font-size: 1.7rem !important;
+        font-size: 1.8rem !important;
         font-weight: 700 !important;
-        color: #f8fafc !important;
+        color: #fafafa !important;
     }
 
-    /* Modern Container Cards for Forecasts with Rounded Digital Aesthetic */
+    /* Container Cards for Forecasts */
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(15, 23, 42, 0.7) !important;
-        border: 1px solid rgba(56, 189, 248, 0.15) !important;
-        border-radius: 20px !important;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+        background: #121316 !important;
+        border: 1px solid #27272a !important;
+        border-radius: 14px !important;
+        transition: all 0.2s ease-in-out;
     }
 
     [data-testid="stVerticalBlockBorderWrapper"]:hover {
-        border-color: #0ea5e9 !important;
-        transform: translateY(-4px);
-        box-shadow: 0 12px 28px -6px rgba(14, 165, 233, 0.25);
+        border-color: #f59e0b !important;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.15);
     }
 
-    /* Digital Rounded Forecast Icons Styling */
+    /* Forecast Icons Styling */
     .digital-icon-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        margin: 8px 0 12px 0;
+        margin: 10px 0;
     }
     
     .digital-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: 18px;
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-        border: 1px solid rgba(56, 189, 248, 0.3);
-        box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.4);
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        background: #18191f;
+        border: 1px solid #27272a;
         padding: 8px;
         object-fit: contain;
         display: block;
-        transition: transform 0.2s ease;
-    }
-
-    .digital-icon:hover {
-        transform: scale(1.05);
-        border-color: #38bdf8;
     }
 
     /* Tabs UI Polish */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
+        gap: 8px;
         background-color: transparent;
     }
 
     .stTabs [data-baseweb="tab"] {
-        border-radius: 12px;
-        padding: 10px 24px;
-        background-color: #0f172a;
-        border: 1px solid #1e293b;
-        color: #94a3b8;
+        border-radius: 8px;
+        padding: 8px 20px;
+        background-color: #121316;
+        border: 1px solid #27272a;
+        color: #a1a1aa;
         font-weight: 600;
     }
 
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%) !important;
-        color: #ffffff !important;
-        border-color: transparent !important;
-        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        background: #f59e0b !important;
+        color: #0c0d10 !important;
+        border-color: #f59e0b !important;
+        font-weight: 700 !important;
     }
 
     /* Responsive adjustments */
@@ -214,7 +208,7 @@ st.markdown("""
             padding: 1rem 0.75rem !important;
         }
         .hero-title {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
         }
     }
 </style>
@@ -296,7 +290,7 @@ def load_live_weather():
                 st.markdown(f"""
                 <div class="alert-card-severe" style="border-left-color: {status_color};">
                     <strong style="color: {status_color}; font-size: 1.1rem;">🚨 {event}</strong><br/>
-                    <span style="color: #f1f5f9; margin-top: 4px; display: block;">{headline}</span>
+                    <span style="color: #f4f4f5; margin-top: 4px; display: block;">{headline}</span>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -336,7 +330,7 @@ def load_live_weather():
             st.metric("☁️ Sky State", current['shortForecast'])
         
         st.markdown(f"""
-        <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid #1e293b; border-radius: 12px; padding: 14px 18px; margin: 16px 0 24px 0; color: #cbd5e1; font-size: 0.98rem;">
+        <div style="background: #121316; border: 1px solid #27272a; border-radius: 10px; padding: 14px 18px; margin: 16px 0 24px 0; color: #d4d4d8; font-size: 0.98rem;">
             <strong>📋 Detailed Summary:</strong> {current['detailedForecast']}
         </div>
         """, unsafe_allow_html=True)
@@ -437,7 +431,7 @@ load_live_weather()
 # ==========================================
 st.markdown("<div style='margin: 40px 0 20px 0;'></div>", unsafe_allow_html=True)
 st.subheader("💬 Community Feedback and Suggestions")
-st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Send your feedback and suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #a1a1aa; font-size: 0.95rem;'>Send your feedback and suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
 
 components.html("""
 <!DOCTYPE html>
@@ -446,8 +440,8 @@ components.html("""
     <style>
         body {
             background-color: transparent;
-            color: #f1f5f9;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #f4f4f5;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0;
             padding: 0;
         }
@@ -464,15 +458,17 @@ components.html("""
         label {
             display: block;
             font-size: 0.85rem;
-            color: #94a3b8;
+            color: #a1a1aa;
             margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
         input, textarea {
             width: 100%;
-            background-color: #0f172a;
-            border: 1px solid #1e293b;
+            background-color: #121316;
+            border: 1px solid #27272a;
             border-radius: 8px;
-            color: #f1f5f9;
+            color: #f4f4f5;
             padding: 10px 12px;
             font-size: 0.95rem;
             box-sizing: border-box;
@@ -480,19 +476,19 @@ components.html("""
             transition: border-color 0.2s;
         }
         input:focus, textarea:focus {
-            border-color: #0ea5e9;
+            border-color: #f59e0b;
         }
         textarea {
             resize: vertical;
             height: 90px;
         }
         button {
-            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
-            color: white;
+            background: #f59e0b;
+            color: #0c0d10;
             border: none;
             border-radius: 8px;
-            padding: 10px 20px;
-            font-weight: 600;
+            padding: 11px 20px;
+            font-weight: 700;
             font-size: 0.95rem;
             cursor: pointer;
             width: 100%;
@@ -545,7 +541,7 @@ components.html("""
             const formData = new FormData(form);
             const object = Object.fromEntries(formData);
             const json = JSON.stringify(object);
-            result.style.color = "#94a3b8";
+            result.style.color = "#a1a1aa";
             result.innerHTML = "Sending feedback...";
 
             fetch('https://api.web3forms.com/submit', {
@@ -559,7 +555,7 @@ components.html("""
             .then(async (response) => {
                 let jsonResponse = await response.json();
                 if (response.status == 200) {
-                    result.style.color = "#22c55e";
+                    result.style.color = "#10b981";
                     result.innerHTML = "✅ Feedback and suggestions sent directly to wsnk836@gmail.com!";
                     form.reset();
                 } else {
@@ -581,13 +577,11 @@ components.html("""
 # --- GITHUB REPOSITORY LINK FOOTER ---
 # ==========================================
 st.markdown("""
-<div style="text-align: center; color: #64748b; font-size: 0.9rem; padding-top: 30px; padding-bottom: 20px;">
-    <hr style="border: none; border-top: 1px solid #1e293b; margin-bottom: 20px;">
+<div style="text-align: center; color: #71717a; font-size: 0.9rem; padding-top: 30px; padding-bottom: 20px;">
+    <hr style="border: none; border-top: 1px solid #27272a; margin-bottom: 20px;">
     💻 Source code available on 
-    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600;">
+    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #fbbf24; text-decoration: none; font-weight: 600;">
         GitHub
     </a>
 </div>
 """, unsafe_allow_html=True)
-
-```

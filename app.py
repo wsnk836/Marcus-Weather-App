@@ -576,8 +576,7 @@ def load_live_weather():
                 """, height=160, scrolling=False)
 
         except Exception as e:
-    # --- FIXED UNESCAPED COMMENT IN STYLESHEET (UNTERMINATED STRING RESOLVED) ---
-        st.error(f"Could not load NWS forecast telemetry: {e}")
+            st.error(f"Could not load NWS forecast telemetry: {e}")
 
         st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
 
@@ -758,7 +757,7 @@ requests_comp.html("""
                 } else {
                     result.style.color = "#ef4444";
                     result.innerHTML = jsonResponse.message || "Something went wrong!";
-                }previous
+                }
             })
             .catch(error => {
                 result.style.color = "#ef4444";

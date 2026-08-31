@@ -219,7 +219,6 @@ st.markdown("""
 # ==========================================
 @st.fragment(run_every=60)
 def load_live_weather():
-    # NWS API requires a unique User-Agent header with contact info per guidelines
     headers = {
         "User-Agent": "MarcusWeatherApp (wsnk836@gmail.com)",
         "Accept": "application/geo+json"
@@ -372,11 +371,11 @@ def load_live_weather():
 load_live_weather()
 
 # ==========================================
-# --- COMMUNITY FEEDBACK & CLIENT-SIDE HTML FORM ---
+# --- COMMUNITY FEEDBAR & CLIENT-SIDE HTML FORM ---
 # ==========================================
 st.markdown("<div style='margin: 40px 0 20px 0;'></div>", unsafe_allow_html=True)
 st.subheader("💬 Community Feedback & Station Log")
-st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Send local spotter reports or dashboard suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Send local reports or dashboard suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
 
 components.html("""
 <!DOCTYPE html>
@@ -455,8 +454,8 @@ components.html("""
         
         <div class="row">
             <div class="col form-group">
-                <label>Name / Callsign (Optional)</label>
-                <input type="text" name="name" placeholder="Spotter Name">
+                <label>Name *</label>
+                <input type="text" name="name" placeholder="Your Name" required>
             </div>
             <div class="col form-group">
                 <label>Location / Grid (Optional)</label>
@@ -465,7 +464,7 @@ components.html("""
         </div>
         
         <div class="form-group">
-            <label>Your Report, Check-in, or Feedback</label>
+            <label>Your Report, Check-in, or Feedback *</label>
             <textarea name="message" placeholder="Enter conditions or feedback here..." required></textarea>
         </div>
         

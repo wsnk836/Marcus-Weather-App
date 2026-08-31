@@ -359,7 +359,7 @@ def load_live_weather():
 
             # --- NATIVE STREAMLIT BUTTON GRID (FULL DAY SELECTOR CARDS) ---
             active_tab_days = daily_forecasts[:3] if st.session_state.get("radio_3day", True) else daily_forecasts[:7]
-            # Fallback determination for active selected day
+            
             active_selected_day = daily_forecasts[0]['day']
             if st.session_state.get("radio_3day"):
                 active_selected_day = st.session_state.radio_3day
@@ -374,27 +374,36 @@ def load_live_weather():
                     is_selected = (d_item['day'] == active_selected_day)
                     btn_label = f"📍 {d_item['day']}" if is_selected else d_item['day']
                     if st.button(btn_label, key=f"day_btn_{idx}_{d_item['day']}", use_container_width=True):
-                        # Update session state dynamically
                         if len(active_tab_days) <= 3:
                             st.session_state.radio_3day = d_item['day']
                         else:
                             st.session_state.radio_7day = d_item['day']
                         st.rerun()
 
-            # Re-evaluate selected record after button click
             selected_record = next((d for d in daily_forecasts if d['day'] == active_selected_day), daily_forecasts[0])
 
             display_high = selected_record['high']
             display_low = selected_record['low']
             
-            if display_high == "N/A" or display_low == "N/A":
-                base_name = selected_record['day'].replace(" Night", "")
+            # Robust Fallback for N/A values
+            if display_high == "N/A":
+                base_name = selected_record['day'].replace(" Night", "").replace("Tonight", "")
                 for p in periods:
-                    if base_name.lower() in p['name'].lower():
-                        if p['isDaytime'] and display_high == "N/A":
+                    if p['isDaytime'] and (not base_name or base_name.lower() in p['name'].lower()):
+                        display_high = f"{p['temperature']}°{p['temperatureUnit']}"
+                        break
+                if display_high == "N/A" and len(periods) > 0:
+                    # Fallback to absolute first daytime period available
+                    for p in periods:
+                        if p['isDaytime']:
                             display_high = f"{p['temperature']}°{p['temperatureUnit']}"
-                        elif not p['isDaytime'] and display_low == "N/A":
-                            display_low = f"{p['temperature']}°{p['temperatureUnit']}"
+                            break
+
+            if display_low == "N/A":
+                for p in periods:
+                    if not p['isDaytime']:
+                        display_low = f"{p['temperature']}°{p['temperatureUnit']}"
+                        break
 
             # --- FULL FORECAST DRILL-DOWN LAYER ---
             st.markdown(f"""
@@ -403,7 +412,7 @@ def load_live_weather():
                     🏛️ Full NWS Forecast Report • {selected_record['day']}
                 </div>
                 <div style="font-size: 0.92rem; color: #f4f4f5; margin-bottom: 8px; line-height: 1.6;">
-                    <strong>Daytime Forecast:</strong> {selected_record['detailed']}
+                    <strong>Forecast Details:</strong> {selected_record['detailed']}
                 </div>
                 {f'<div style="font-size: 0.92rem; color: #d4d4d8; margin-bottom: 12px; line-height: 1.6;"><strong>Nighttime Forecast:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
                 <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 0.85rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 10px;">

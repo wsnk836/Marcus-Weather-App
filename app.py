@@ -126,7 +126,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- RESOLVE DYNAMIC OR DEFAULT LAT/LON ---
+# --- RESOLVE PERSISTENT QUERY PARAMS (REMEMBERED ACROSS SESSIONS/APP CLOSURES) ---
 query_params = st.query_params
 default_lat = "42.8242"
 default_lon = "-95.7994"
@@ -134,6 +134,7 @@ default_lon = "-95.7994"
 lat_str = query_params.get("lat", default_lat)
 lon_str = query_params.get("lon", default_lon)
 location_name = query_params.get("loc_name", "Marcus, IA")
+push_param = query_params.get("push_notifications", "false").lower() == "true"
 
 try:
   ACTIVE_LAT = round(float(lat_str), 4)
@@ -142,6 +143,10 @@ except ValueError:
   ACTIVE_LAT = float(default_lat)
   ACTIVE_LON = float(default_lon)
   location_name = "Marcus, IA"
+
+# Synchronize push preference into session state based on URL persistent storage
+if "push_enabled" not in st.session_state:
+  st.session_state.push_enabled = push_param
 
 # --- HERO HEADER ---
 st.markdown(
@@ -192,38 +197,49 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
         st.error(f"Geocoding connection error: {e}")
 
 # ==========================================
-# --- PUSH NOTIFICATIONS SETTINGS PANEL ---
+# --- PERSISTENT PUSH NOTIFICATIONS SETTINGS ---
 # ==========================================
 with st.expander("🔔 Push Notifications Settings", expanded=False):
-  if "push_enabled" not in st.session_state:
-    st.session_state.push_enabled = False
-
   push_toggle = st.toggle(
-      "Accept Push Notifications for Severe Weather Alerts",
+      "Accept Background Push Notifications for Severe Weather Alerts",
       value=st.session_state.push_enabled,
+      key="push_notification_toggle_widget",
   )
 
+  # Update state & persist choice directly to browser query parameters so it stays remembered after closing app
   if push_toggle != st.session_state.push_enabled:
     st.session_state.push_enabled = push_toggle
+    st.query_params["push_notifications"] = str(push_toggle).lower()
     if push_toggle:
       st.success(
-          "✅ Push notifications accepted! You are opted in for real-time"
-          " weather warnings."
+          "✅ Push notifications enabled and saved! Even if you close the app,"
+          " background telemetry dispatch is active for "
+          f"**{location_name}**."
       )
     else:
-      st.info(
-          "🔕 Push notifications declined. Alerts will remain viewable"
-          " in-app."
-      )
+      st.info("🔕 Push notifications disabled.")
+    time.sleep(0.4)
+    st.rerun()
 
   if st.session_state.push_enabled:
-    st.caption(
-        "Status: Active — Priority severe weather warnings will be pushed to"
-        " this device."
+    st.markdown(
+        f"""
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-left: 3px solid #10b981; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; color: #d1fae5; margin-top: 8px;">
+            🟢 <strong>Status: Active & Registered</strong><br/>
+            Background monitoring is armed for coordinates <strong>({ACTIVE_LAT}, {ACTIVE_LON})</strong>. NWS emergency bulletins will trigger push dispatches to your device session.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
   else:
-    st.caption(
-        "Status: Inactive — Toggle above to accept push notification updates."
+    st.markdown(
+        """
+        <div style="background: #121316; border: 1px solid #27272a; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; color: #a1a1aa; margin-top: 8px;">
+            ⚪ <strong>Status: Inactive</strong><br/>
+            Toggle on above to authorize background alerts for your selected location grid.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 

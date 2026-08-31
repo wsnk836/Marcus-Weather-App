@@ -374,10 +374,56 @@ def load_live_weather():
 load_live_weather()
 
 # ==========================================
+# --- COMMUNITY FEEDBACK & STATION LOG ---
+# ==========================================
+st.markdown("<div style='margin: 40px 0 20px 0;'></div>", unsafe_allow_html=True)
+st.subheader("💬 Community Feedback & Repeater Log")
+st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Share local spotter reports, check-ins, or suggestions for the dashboard and GMRS operations.</p>", unsafe_allow_html=True)
+
+if "feedback_list" not in st.session_state:
+    st.session_state.feedback_list = []
+
+with st.form("feedback_form", clear_on_submit=True):
+    col_name, col_loc = st.columns(2)
+    with col_name:
+        user_name = st.text_input("Name / Callsign (Optional)")
+    with col_loc:
+        user_location = st.text_input("Location / Grid (Optional)")
+    
+    user_message = st.text_area("Your Report, Check-in, or Feedback")
+    submit_feedback = st.form_submit_button("Submit Note")
+    
+    if submit_feedback:
+        if user_message.strip():
+            st.session_state.feedback_list.insert(0, {
+                "name": user_name.strip() if user_name else "Anonymous Spotter",
+                "location": user_location.strip() if user_location else "Marcus, IA",
+                "message": user_message.strip(),
+                "time": time.strftime('%m/%d/%Y %I:%M %p')
+            })
+            st.success("Note posted successfully!")
+        else:
+            st.warning("Please enter a message before submitting.")
+
+# Display recent feedback logs
+if st.session_state.feedback_list:
+    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+    for fb in st.session_state.feedback_list[:5]:
+        st.markdown(f"""
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 10px; padding: 14px 18px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; color: #38bdf8; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">
+                <span>👤 {fb['name']} &bull; <span style="color: #94a3b8;">{fb['location']}</span></span>
+                <span style="color: #64748b;">{fb['time']}</span>
+            </div>
+            <div style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.4;">{fb['message']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ==========================================
 # --- GITHUB REPOSITORY LINK FOOTER ---
 # ==========================================
 st.markdown("""
-<div style="text-align: center; color: #64748b; font-size: 0.9rem; padding-top: 40px; padding-bottom: 20px;">
+<div style="text-align: center; color: #64748b; font-size: 0.9rem; padding-top: 30px; padding-bottom: 20px;">
     <hr style="border: none; border-top: 1px solid #1e293b; margin-bottom: 20px;">
     💻 Source code available on 
     <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600;">

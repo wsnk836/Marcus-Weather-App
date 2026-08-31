@@ -402,7 +402,11 @@ def load_live_weather():
                         with st.container(border=True):
                             st.markdown(f"**{day_data['day']}**")
                             if day_data['icon']:
-                                st.markdown(f'<div class="digital-icon-container"><img src="{day_data["icon"]}" class="digital-icon" alt="weather icon" /></div>', unsafe_allow_html=True)
+                                st.markdown(f"""
+                                <div class="digital-icon-container">
+                                    <img src="{day_data['icon']}" class="digital-icon" alt="weather icon" />
+                                </div>
+                                """, unsafe_allow_html=True)
                             st.caption(f"H: {day_data['high']} | L: {day_data['low']}")
                             st.caption(day_data['forecast'])
 
@@ -415,9 +419,217 @@ def load_live_weather():
                         with st.container(border=True):
                             st.markdown(f"**{day_data['day']}**")
                             if day_data['icon']:
-                                st.markdown(f'<div class="digital-icon-container"><img src="{day_data["icon"]}" class="digital-icon" alt="weather icon" /></div>', unsafe_allow_html=True)
+                                st.markdown(f"""
+                                <div class="digital-icon-container">
+                                    <img src="{day_data['icon']}" class="digital-icon" alt="weather icon" />
+                                </div>
+                                """, unsafe_allow_html=True)
                             st.caption(f"H: {day_data['high']} | L: {day_data['low']}")
                             st.caption(day_data['forecast'])
 
         except Exception as e:
-            st.error(f
+            st.error(f"Could not load NWS forecast telemetry: {e}")
+
+        st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
+
+        # --- LIVE RADAR LOOP ---
+        st.markdown('<div id="radar-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📡 Live Doppler Radar (KFSD)")
+        cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
+        st.caption(f"🔄 Sync active • {cst_time}")
+        radar_url = f"https://radar.weather.gov/ridge/standard/KFSD_loop.gif?t={int(time.time())}"
+        with st.container(border=True):
+            st.image(radar_url, use_container_width=True)
+
+    with col_right:
+        # --- WELCOME CARD ---
+        st.markdown("""
+        <div class="command-card welcome-card">
+            👋 <strong>Welcome to Marcus Weather Command.</strong> Your centralized operational dashboard for live local meteorological telemetry, high-definition Doppler radar loops, and emergency alerts. Keep this app active for continuous monitoring.
+        </div>
+        """, unsafe_allow_html=True)
+
+        # --- COMMUNITY NEWS SECTION ---
+        st.markdown('<div id="news-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📻 Community News")
+        st.markdown("""
+        <div class="command-card repeater-card">
+            <strong>GMRS REPEATER GOING ACTIVE — 12/01/2026:</strong> Tune to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
+        </div>
+        """, unsafe_allow_html=True)
+
+        # --- INSTALL SECTION ---
+        st.markdown('<div id="install-sec"></div>', unsafe_allow_html=True)
+        st.subheader("📲 Install")
+        st.markdown("""
+        <div class="command-card install-card">
+            <strong>Add & Rename to Home Screen:</strong> Install this dashboard on your mobile device:<br/>
+            • <strong>iOS (Safari):</strong> Tap <strong>Share</strong>, select <strong>"Add to Home Screen"</strong>, rename it to <strong>"Marcus Weather"</strong>, and tap <strong>Add</strong>.<br/>
+            • <strong>Android (Chrome):</strong> Tap the <strong>Menu</strong> (three dots), select <strong>"Add to Home screen"</strong> (or "Install app"), rename the shortcut to <strong>"Marcus Weather"</strong>, and confirm.
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# Execute auto-refresh telemetry fragment
+load_live_weather()
+
+# ==========================================
+# --- COMMUNITY FEEDBACK AND SUGGESTIONS HTML FORM ---
+# ==========================================
+st.markdown('<div id="feedback-sec"></div>', unsafe_allow_html=True)
+st.markdown("<div style='margin: 30px 0 15px 0;'></div>", unsafe_allow_html=True)
+st.subheader("💬 Community Feedback and Suggestions")
+st.markdown("<p style='color: #a1a1aa; font-size: 0.92rem;'>Send your feedback and suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
+
+components.html("""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            background-color: transparent;
+            color: #f4f4f5;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .row {
+            display: flex;
+            gap: 12px;
+        }
+        .col {
+            flex: 1;
+        }
+        label {
+            display: block;
+            font-size: 0.82rem;
+            color: #a1a1aa;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        input, textarea {
+            width: 100%;
+            background-color: #121316;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            color: #f4f4f5;
+            padding: 10px 12px;
+            font-size: 0.92rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, textarea:focus {
+            border-color: #ef4444;
+        }
+        textarea {
+            resize: vertical;
+            height: 80px;
+        }
+        button {
+            background: #ef4444;
+            color: #0c0d10;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 4px;
+            transition: opacity 0.2s;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        #result {
+            margin-top: 8px;
+            font-size: 0.88rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <form action="https://api.web3forms.com/submit" method="POST" id="web3form">
+        <input type="hidden" name="access_key" value="6f59571f-f519-4655-9b50-095eed178152">
+        <input type="hidden" name="subject" value="💡 Community Feedback and Suggestions from Marcus Command">
+        
+        <div class="row">
+            <div class="col form-group">
+                <label>Name *</label>
+                <input type="text" name="name" placeholder="Your Name" required>
+            </div>
+            <div class="col form-group">
+                <label>Location / Grid (Optional)</label>
+                <input type="text" name="location" placeholder="Marcus, IA">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Your Feedback and Suggestions *</label>
+            <textarea name="message" placeholder="Enter your feedback or suggestions here..." required></textarea>
+        </div>
+        
+        <input type="checkbox" name="botcheck" style="display: none;">
+
+        <button type="submit" id="submit-btn">Send Community Feedback and Suggestions</button>
+        <div id="result"></div>
+    </form>
+
+    <script>
+        const form = document.getElementById('web3form');
+        const result = document.getElementById('result');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const object = Object.fromEntries(formData);
+            const json = JSON.stringify(object);
+            result.style.color = "#a1a1aa";
+            result.innerHTML = "Sending feedback...";
+
+            fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: json
+            })
+            .then(async (response) => {
+                let jsonResponse = await response.json();
+                if (response.status == 200) {
+                    result.style.color = "#10b981";
+                    result.innerHTML = "✅ Feedback and suggestions sent directly to wsnk836@gmail.com!";
+                    form.reset();
+                } else {
+                    result.style.color = "#ef4444";
+                    result.innerHTML = jsonResponse.message || "Something went wrong!";
+                }
+            })
+            .catch(error => {
+                result.style.color = "#ef4444";
+                result.innerHTML = "Network connection error!";
+            });
+        });
+    </script>
+</body>
+</html>
+""", height=270, scrolling=False)
+
+# ==========================================
+# --- GITHUB REPOSITORY LINK FOOTER ---
+# ==========================================
+st.markdown("""
+<div style="text-align: center; color: #71717a; font-size: 0.88rem; padding-top: 20px; padding-bottom: 15px;">
+    <hr style="border: none; border-top: 1px solid #27272a; margin-bottom: 15px;">
+    💻 Source code available on 
+    <a href="https://github.com/wsnk836/marcus-weather-app" target="_blank" style="color: #f87171; text-decoration: none; font-weight: 600;">
+        GitHub
+    </a>
+</div>
+""", unsafe_allow_html=True)

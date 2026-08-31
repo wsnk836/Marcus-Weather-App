@@ -130,18 +130,45 @@ st.markdown("""
         color: #f8fafc !important;
     }
 
-    /* Modern Container Cards for Forecasts */
+    /* Modern Container Cards for Forecasts with Rounded Digital Aesthetic */
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(15, 23, 42, 0.6) !important;
-        border: 1px solid #1e293b !important;
-        border-radius: 16px !important;
-        transition: all 0.2s ease-in-out;
+        background: rgba(15, 23, 42, 0.7) !important;
+        border: 1px solid rgba(56, 189, 248, 0.15) !important;
+        border-radius: 20px !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
     }
 
     [data-testid="stVerticalBlockBorderWrapper"]:hover {
         border-color: #0ea5e9 !important;
-        transform: translateY(-3px);
-        box-shadow: 0 10px 20px -5px rgba(14, 165, 233, 0.15);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px -6px rgba(14, 165, 233, 0.25);
+    }
+
+    /* Digital Rounded Forecast Icons Styling */
+    .digital-icon-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 8px 0 12px 0;
+    }
+    
+    .digital-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.4);
+        padding: 8px;
+        object-fit: contain;
+        display: block;
+        transition: transform 0.2s ease;
+    }
+
+    .digital-icon:hover {
+        transform: scale(1.05);
+        border-color: #38bdf8;
     }
 
     /* Tabs UI Polish */
@@ -151,8 +178,8 @@ st.markdown("""
     }
 
     .stTabs [data-baseweb="tab"] {
-        border-radius: 10px;
-        padding: 10px 20px;
+        border-radius: 12px;
+        padding: 10px 24px;
         background-color: #0f172a;
         border: 1px solid #1e293b;
         color: #94a3b8;
@@ -163,6 +190,7 @@ st.markdown("""
         background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%) !important;
         color: #ffffff !important;
         border-color: transparent !important;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
     }
 
     /* Responsive adjustments */
@@ -320,19 +348,23 @@ def load_live_weather():
                 })
             i += 1
 
-        # --- EXTENDED FORECAST TABS ---
-        tab5, tab7 = st.tabs(["📅 5-Day Outlook", "📅 7-Day Outlook"])
+        # --- EXTENDED FORECAST TABS (3-Day & 7-Day) ---
+        tab3, tab7 = st.tabs(["📅 3-Day Outlook", "📅 7-Day Outlook"])
         
-        with tab5:
+        with tab3:
             st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
-            days_to_show = daily_forecasts[:5]
-            cols5 = st.columns(len(days_to_show))
+            days_to_show = daily_forecasts[:3]
+            cols3 = st.columns(len(days_to_show))
             for idx, day_data in enumerate(days_to_show):
-                with cols5[idx]:
+                with cols3[idx]:
                     with st.container(border=True):
                         st.markdown(f"#### {day_data['day']}")
                         if day_data['icon']:
-                            st.image(day_data['icon'], width=48)
+                            st.markdown(f"""
+                            <div class="digital-icon-container">
+                                <img src="{day_data['icon']}" class="digital-icon" alt="weather icon" />
+                            </div>
+                            """, unsafe_allow_html=True)
                         st.markdown(f"🔥 **High:** {day_data['high']}")
                         st.markdown(f"❄️ **Low:** {day_data['low']}")
                         st.caption(day_data['forecast'])
@@ -346,7 +378,11 @@ def load_live_weather():
                     with st.container(border=True):
                         st.markdown(f"#### {day_data['day']}")
                         if day_data['icon']:
-                            st.image(day_data['icon'], width=48)
+                            st.markdown(f"""
+                            <div class="digital-icon-container">
+                                <img src="{day_data['icon']}" class="digital-icon" alt="weather icon" />
+                            </div>
+                            """, unsafe_allow_html=True)
                         st.markdown(f"🔥 **High:** {day_data['high']}")
                         st.markdown(f"❄️ **Low:** {day_data['low']}")
                         st.caption(day_data['forecast'])
@@ -371,7 +407,7 @@ def load_live_weather():
 load_live_weather()
 
 # ==========================================
-# --- COMMUNITY FEEDBAR & CLIENT-SIDE HTML FORM ---
+# --- COMMUNITY FEEDBACK & CLIENT-SIDE HTML FORM ---
 # ==========================================
 st.markdown("<div style='margin: 40px 0 20px 0;'></div>", unsafe_allow_html=True)
 st.subheader("💬 Community Feedback & Station Log")

@@ -1,9 +1,14 @@
+To make your app display **"Marcus Weather"** when saved or added to a mobile device's home screen, we need to update the page configuration title and add mobile-specific meta tags to the HTML header.
+
+Here is the complete, updated code. Copy this and replace everything in your `app.py` file on GitHub, then commit the changes:
+
+```python
 import streamlit as st
 import streamlit.components.v1 as components
 import requests
 import time
 
-# Page Configuration
+# Page Configuration (Sets the browser tab and mobile bookmark name)
 st.set_page_config(
     page_title="Marcus Weather", 
     page_icon="📡",
@@ -11,25 +16,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- AUTOMATIC MOBILE & BROWSER NAMING ---
-components.html("""
-<script>
-    window.parent.document.title = "Marcus Weather";
-    
-    let metaApple = window.parent.document.createElement('meta');
-    metaApple.name = "apple-mobile-web-app-title";
-    metaApple.content = "Marcus Weather";
-    window.parent.document.head.appendChild(metaApple);
-
-    let metaApp = window.parent.document.createElement('meta');
-    metaApp.name = "application-name";
-    metaApp.content = "Marcus Weather";
-    window.parent.document.head.appendChild(metaApp);
-</script>
-""", height=0, width=0)
-
-# --- MODERN WEATHER CONSOLE CUSTOM CSS ---
+# --- MODERN WEATHER CONSOLE CUSTOM CSS & MOBILE META TAGS ---
 st.markdown("""
+<head>
+    <meta name="apple-mobile-web-app-title" content="Marcus Weather">
+    <meta name="application-name" content="Marcus Weather">
+</head>
 <style>
     /* Dark console background theme & global font adjustments */
     .stApp {
@@ -375,3 +367,5 @@ st.markdown("""
     </a>
 </div>
 """, unsafe_allow_html=True)
+
+```

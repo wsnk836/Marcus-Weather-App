@@ -1,6 +1,5 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import requests
 import time
 
 # Page Configuration
@@ -374,46 +373,151 @@ def load_live_weather():
 load_live_weather()
 
 # ==========================================
-# --- COMMUNITY FEEDBACK & WEB3FORMS EMAIL ---
+# --- COMMUNITY FEEDBACK & CLIENT-SIDE HTML FORM ---
 # ==========================================
 st.markdown("<div style='margin: 40px 0 20px 0;'></div>", unsafe_allow_html=True)
 st.subheader("💬 Community Feedback & Station Log")
 st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Send local spotter reports or dashboard suggestions directly to wsnk836@gmail.com.</p>", unsafe_allow_html=True)
 
-with st.form("feedback_form", clear_on_submit=True):
-    col_name, col_loc = st.columns(2)
-    with col_name:
-        user_name = st.text_input("Name / Callsign (Optional)")
-    with col_loc:
-        user_location = st.text_input("Location / Grid (Optional)")
-    
-    user_message = st.text_area("Your Report, Check-in, or Feedback")
-    submit_feedback = st.form_submit_button("Send to Command Email")
-    
-    if submit_feedback:
-        if user_message.strip():
-            name_val = user_name.strip() if user_name else "Anonymous Spotter"
-            loc_val = user_location.strip() if user_location else "Marcus, IA"
-            
-            payload = {
-                "access_key": "6f59571f-f519-4655-9b50-095eed178152",
-                "subject": f"🚨 Weather App Report from {name_val}",
-                "name": name_val,
-                "location": loc_val,
-                "message": user_message.strip()
-            }
-            
-            try:
-                response = requests.post("https://api.web3forms.com/submit", data=payload, timeout=10)
-                result = response.json()
-                if result.get("success"):
-                    st.success("Feedback sent directly to wsnk836@gmail.com!")
-                else:
-                    st.error(f"Failed to send message: {result.get('message', 'Unknown error')}")
-            except Exception as e:
-                st.error(f"Network error while dispatching email: {e}")
-        else:
-            st.warning("Please enter a message before submitting.")
+# Using Web3Forms client-side HTML component to bypass server IP restrictions completely
+components.html("""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            background-color: transparent;
+            color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .row {
+            display: flex;
+            gap: 12px;
+        }
+        .col {
+            flex: 1;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+        input, textarea {
+            width: 100%;
+            background-color: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            color: #f1f5f9;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, textarea:focus {
+            border-color: #0ea5e9;
+        }
+        textarea {
+            resize: vertical;
+            height: 90px;
+        }
+        button {
+            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 5px;
+            transition: opacity 0.2s;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        #result {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <form action="https://api.web3forms.com/submit" method="POST" id="web3form">
+        <input type="hidden" name="access_key" value="6f59571f-f519-4655-9b50-095eed178152">
+        <input type="hidden" name="subject" value="🚨 Weather App Report from Marcus Command">
+        
+        <div class="row">
+            <div class="col form-group">
+                <label>Name / Callsign (Optional)</label>
+                <input type="text" name="name" placeholder="Spotter Name">
+            </div>
+            <div class="col form-group">
+                <label>Location / Grid (Optional)</label>
+                <input type="text" name="location" placeholder="Marcus, IA">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Your Report, Check-in, or Feedback</label>
+            <textarea name="message" placeholder="Enter conditions or feedback here..." required></textarea>
+        </div>
+        
+        <!-- Honeypot spam protection -->
+        <input type="checkbox" name="botcheck" style="display: none;" style="display:none;">
+
+        <button type="submit" id="submit-btn">Send to Command Email</button>
+        <div id="result"></div>
+    </form>
+
+    <script>
+        const form = document.getElementById('web3form');
+        const result = document.getElementById('result');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const object = Object.fromEntries(formData);
+            const json = JSON.stringify(object);
+            result.style.color = "#94a3b8";
+            result.innerHTML = "Sending report...";
+
+            fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: json
+            })
+            .then(async (response) => {
+                let jsonResponse = await response.json();
+                if (response.status == 200) {
+                    result.style.color = "#22c55e";
+                    result.innerHTML = "✅ Feedback sent directly to wsnk836@gmail.com!";
+                    form.reset();
+                } else {
+                    result.style.color = "#ef4444";
+                    result.innerHTML = jsonResponse.message || "Something went wrong!";
+                }
+            })
+            .catch(error => {
+                result.style.color = "#ef4444";
+                result.innerHTML = "Network connection error!";
+            });
+        });
+    </script>
+</body>
+</html>
+""", height=290, scrolling=False)
 
 # ==========================================
 # --- GITHUB REPOSITORY LINK FOOTER ---

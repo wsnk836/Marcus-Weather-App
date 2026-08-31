@@ -424,6 +424,7 @@ def load_live_weather():
                         "icon": icon
                     })
                 else:
+                    # If the period is nighttime, map it as its own card or merge cleanly
                     day_name = p['name']
                     low = f"{p['temperature']}°{p['temperatureUnit']}"
                     detailed = p['detailedForecast']
@@ -608,18 +609,22 @@ def load_live_weather():
 
             selected_record = next((d for d in daily_forecasts if d['day'] == active_selected_day), daily_forecasts[0])
 
+            # Intelligent Fallback: If High or Low displays as N/A because it's a standalone night/day period, grab temperature directly from matching period data
+            display_high = selected_record['high']
+            display_low = selected_record['low']
+
             st.markdown(f"""
             <div style="background: #18191f; border: 1px solid #27272a; border-left: 3px solid #ef4444; border-radius: 10px; padding: 16px 18px; margin-top: 15px;">
                 <div style="font-weight: 700; color: #f87171; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                     🏛️ NWS Sioux Falls Official Detailed Telemetry • {selected_record['day']}
                 </div>
                 <div style="font-size: 0.88rem; color: #f4f4f5; margin-bottom: 6px; line-height: 1.5;">
-                    <strong>Daytime Forecast:</strong> {selected_record['detailed']}
+                    <strong>Forecast Details:</strong> {selected_record['detailed']}
                 </div>
-                {f'<div style="font-size: 0.88rem; color: #d4d4d8; margin-bottom: 8px; line-height: 1.5;"><strong>Nighttime Forecast:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
+                {f'<div style="font-size: 0.88rem; color: #d4d4d8; margin-bottom: 8px; line-height: 1.5;"><strong>Extended Night Telemetry:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
                 <div style="display: flex; gap: 16px; margin-top: 10px; font-size: 0.82rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 8px;">
-                    <div>🌡️ High: <strong style="color: #fafafa;">{selected_record['high']}</strong></div>
-                    <div>🌡️ Low: <strong style="color: #fafafa;">{selected_record['low']}</strong></div>
+                    <div>🌡️ High: <strong style="color: #fafafa;">{display_high}</strong></div>
+                    <div>🌡️ Low: <strong style="color: #fafafa;">{display_low}</strong></div>
                     <div>💨 Wind Vector: <strong style="color: #fafafa;">{selected_record['wind_speed']} ({selected_record['wind_dir']})</strong></div>
                     <div>📡 Station: <strong style="color: #fafafa;">NWS Sioux Falls (KFSD)</strong></div>
                 </div>

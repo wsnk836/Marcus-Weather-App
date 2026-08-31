@@ -2,6 +2,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 import requests
 import time
+import smtplib
+from email.message import EmailMessage
 
 # Page Configuration
 st.set_page_config(
@@ -374,14 +376,30 @@ def load_live_weather():
 load_live_weather()
 
 # ==========================================
-# --- COMMUNITY FEEDBACK & STATION LOG ---
+# --- COMMUNITY FEEDBACK & EMAIL LOG ---
 # ==========================================
 st.markdown("<div style='margin: 40px 0 20px 0;'></div>", unsafe_allow_html=True)
-st.subheader("💬 Community Feedback & Repeater Log")
-st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Share local spotter reports, check-ins, or suggestions for the dashboard and GMRS operations.</p>", unsafe_allow_html=True)
+st.subheader("💬 Community Feedback & Station Log")
+st.markdown("<p style='color: #94a3b8; font-size: 0.95rem;'>Send local spotter reports or dashboard suggestions directly to the command email.</p>", unsafe_allow_html=True)
 
-if "feedback_list" not in st.session_state:
-    st.session_state.feedback_list = []
+def send_feedback_email(name, location, message):
+    try:
+        sender_email = st.secrets["email"]["sender"]
+        sender_password = st.secrets["email"]["password"]
+        
+        msg = EmailMessage()
+        msg.set_content(f"New weather report/feedback received:\n\nName/Callsign: {name}\nLocation: {location}\nTime: {time.strftime('%m/%d/%Y %I:%M %p')}\n\nMessage:\n{message}")
+        msg['Subject'] = f"🚨 Weather App Report from {name}"
+        msg['From'] = sender_email
+        msg['To'] = "wsnk836@gmail.com"
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(sender_email, sender_password)
+            smtp.send_message(msg)
+        return True
+    except Exception as e:
+        st.error(f"Failed to send email. Check your Streamlit secrets configuration. Error: {e}")
+        return False
 
 with st.form("feedback_form", clear_on_submit=True):
     col_name, col_loc = st.columns(2)
@@ -391,33 +409,19 @@ with st.form("feedback_form", clear_on_submit=True):
         user_location = st.text_input("Location / Grid (Optional)")
     
     user_message = st.text_area("Your Report, Check-in, or Feedback")
-    submit_feedback = st.form_submit_button("Submit Note")
+    submit_feedback = st.form_submit_button("Send to Command Email")
     
     if submit_feedback:
         if user_message.strip():
-            st.session_state.feedback_list.insert(0, {
-                "name": user_name.strip() if user_name else "Anonymous Spotter",
-                "location": user_location.strip() if user_location else "Marcus, IA",
-                "message": user_message.strip(),
-                "time": time.strftime('%m/%d/%Y %I:%M %p')
-            })
-            st.success("Note posted successfully!")
+            name_val = user_name.strip() if user_name else "Anonymous Spotter"
+            loc_val = user_location.strip() if user_location else "Marcus, IA"
+            
+            with st.spinner("Dispatching email..."):
+                success = send_feedback_email(name_val, loc_val, user_message.strip())
+                if success:
+                    st.success("Feedback sent directly to wsnk836@gmail.com!")
         else:
             st.warning("Please enter a message before submitting.")
-
-# Display recent feedback logs
-if st.session_state.feedback_list:
-    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-    for fb in st.session_state.feedback_list[:5]:
-        st.markdown(f"""
-        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 10px; padding: 14px 18px; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; color: #38bdf8; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">
-                <span>👤 {fb['name']} &bull; <span style="color: #94a3b8;">{fb['location']}</span></span>
-                <span style="color: #64748b;">{fb['time']}</span>
-            </div>
-            <div style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.4;">{fb['message']}</div>
-        </div>
-        """, unsafe_allow_html=True)
 
 # ==========================================
 # --- GITHUB REPOSITORY LINK FOOTER ---

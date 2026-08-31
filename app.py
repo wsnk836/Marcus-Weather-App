@@ -168,7 +168,7 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
 
     if submitted and loc_input.strip():
       try:
-        # Restricted to US to prevent international postal code collisions (e.g., Italy)
+        # Restricted to US to prevent international postal code collisions (e.g. Italy)
         geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(loc_input)}&format=json&countrycodes=us&limit=1"
         geo_resp = requests.get(
             geo_url, headers={"User-Agent": "MarcusWeatherApp"}, timeout=5
@@ -205,6 +205,9 @@ def load_live_weather(lat, lon, loc_label):
 
   if "selected_forecast_day" not in st.session_state:
     st.session_state.selected_forecast_day = None
+
+  # Fallback radar station code
+  radar_station = "KFSD"
 
   # --- ACTIVE SEVERE WEATHER ALERTS ---
   st.subheader(f"⚠️ Active NWS Weather Alerts ({loc_label})")
@@ -270,6 +273,9 @@ def load_live_weather(lat, lon, loc_label):
       if "properties" not in points_response:
         st.error("Received malformed data telemetry from NWS servers.")
         return
+
+      # Dynamically grab the local NWS radar station associated with this coordinate point
+      radar_station = points_response["properties"].get("radarStation", "KFSD")
 
       forecast_url = points_response["properties"].get("forecast")
       if not forecast_url:
@@ -445,13 +451,13 @@ def load_live_weather(lat, lon, loc_label):
 
     st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
 
-    # --- LIVE RADAR LOOP ---
-    st.subheader("📡 Live Doppler Radar Loop")
+    # --- LIVE RADAR LOOP (Dynamically updated based on NWS station metadata) ---
+    st.subheader(f"📡 Live Doppler Radar Loop ({radar_station})")
     cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime(
         "%I:%M:%S %p %Z"
     )
-    st.caption(f"🔄 Sync active • {cst_time} • Pin: {lat}, {lon}")
-    radar_url = f"https://radar.weather.gov/ridge/standard/KFSD_loop.gif?t={int(time.time())}"
+    st.caption(f"🔄 Sync active • {cst_time} • Station: {radar_station} • Pin: {lat}, {lon}")
+    radar_url = f"https://radar.weather.gov/ridge/standard/{radar_station}_loop.gif?t={int(time.time())}"
     with st.container(border=True):
       st.image(radar_url, use_container_width=True)
 

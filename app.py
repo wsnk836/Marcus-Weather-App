@@ -296,19 +296,17 @@ def load_live_weather():
             i = 0
             while i < len(periods):
                 p = periods[i]
-                temp_str = f"{p['temperature']}°{p['temperatureUnit']}"
                 
                 if p['isDaytime']:
                     day_name = p['name']
                     day_detailed = p['detailedForecast']
+                    high_temp = f"{p['temperature']}°{p['temperatureUnit']}"
                     wind_speed = p['windSpeed']
                     wind_dir = p.get('windDirection', '')
-                    high_temp = temp_str
                     
                     low_temp = "N/A"
                     night_detailed = ""
                     
-                    # Look ahead for corresponding nighttime period
                     if i + 1 < len(periods) and not periods[i+1]['isDaytime']:
                         night_p = periods[i+1]
                         low_temp = f"{night_p['temperature']}°{night_p['temperatureUnit']}"
@@ -325,21 +323,22 @@ def load_live_weather():
                         "wind_dir": wind_dir
                     })
                 else:
-                    # Starts with a nighttime period (e.g. Tonight)
                     night_name = p['name']
-                    if night_name.lower() == "tonight":
-                        day_label = "Today"
-                    else:
-                        day_label = night_name.replace(" Night", "").strip()
-                        
+                    day_label = "Today" if night_name.lower() == "tonight" else night_name.replace(" Night", "").strip()
+                    
+                    low_temp = f"{p['temperature']}°{p['temperatureUnit']}"
+                    night_detailed = p['detailedForecast']
+                    wind_speed = p['windSpeed']
+                    wind_dir = p.get('windDirection', '')
+                    
                     daily_forecasts.append({
                         "day": day_label,
                         "high": "N/A",
-                        "low": temp_str,
+                        "low": low_temp,
                         "detailed": "",
-                        "low_detailed": p['detailedForecast'],
-                        "wind_speed": p['windSpeed'],
-                        "wind_dir": p.get('windDirection', '')
+                        "low_detailed": night_detailed,
+                        "wind_speed": wind_speed,
+                        "wind_dir": wind_dir
                     })
                 i += 1
 

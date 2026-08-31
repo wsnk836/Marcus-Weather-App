@@ -13,8 +13,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- BROWSER LOCALSTORAGE BRIDGE (FIXED FOR MOBILE PWA / STANDALONE APPS) ---
-# Uses window.top to break out of the iframe sandbox and redirect the main app window.
+# --- BROWSER LOCALSTORAGE BRIDGE (CRASH-PROOF MOBILE GUARD) ---
+# Uses sessionStorage to guarantee the redirect loop only fires once per session.
 localStorage_sync_code = """
 <script>
     const urlParams = new URLSearchParams(window.location.search);
@@ -25,20 +25,30 @@ localStorage_sync_code = """
         if (urlParams.has('lon')) localStorage.setItem('nws_lon', urlParams.get('lon'));
         if (urlParams.has('loc_name')) localStorage.setItem('nws_loc_name', urlParams.get('loc_name'));
         if (urlParams.has('push_notifications')) localStorage.setItem('nws_push', urlParams.get('push_notifications'));
+        // Clear redirection guard if parameters are successfully loaded
+        sessionStorage.removeItem('nws_redirected');
     } else {
-        const savedLat = localStorage.getItem('nws_lat');
-        const savedLon = localStorage.getItem('nws_lon');
-        const savedLoc = localStorage.getItem('nws_loc_name');
-        const savedPush = localStorage.getItem('nws_push');
+        // Check if we already attempted a redirect this session to prevent infinite loops/crashes
+        const alreadyRedirected = sessionStorage.getItem('nws_redirected');
+        
+        if (!alreadyRedirected) {
+            const savedLat = localStorage.getItem('nws_lat');
+            const savedLon = localStorage.getItem('nws_lon');
+            const savedLoc = localStorage.getItem('nws_loc_name');
+            const savedPush = localStorage.getItem('nws_push');
 
-        if (savedLat || savedPush) {
-            const lat = savedLat || '42.8242';
-            const lon = savedLon || '-95.7994';
-            const loc = savedLoc || 'Marcus, IA';
-            const push = savedPush || 'false';
-            
-            const newUrl = window.location.pathname + `?lat=${lat}&lon=${lon}&loc_name=${encodeURIComponent(loc)}&push_notifications=${push}`;
-            window.top.location.replace(newUrl);
+            if (savedLat || savedPush) {
+                const lat = savedLat || '42.8242';
+                const lon = savedLon || '-95.7994';
+                const loc = savedLoc || 'Marcus, IA';
+                const push = savedPush || 'false';
+                
+                // Set session flag to block subsequent reload loops
+                sessionStorage.setItem('nws_redirected', 'true');
+                
+                const newUrl = window.location.pathname + `?lat=${lat}&lon=${lon}&loc_name=${encodeURIComponent(loc)}&push_notifications=${push}`;
+                window.top.location.replace(newUrl);
+            }
         }
     }
 </script>
@@ -228,6 +238,7 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
                         localStorage.setItem('nws_lon', '{new_lon}');
                         localStorage.setItem('nws_loc_name', '{new_name}');
                         localStorage.setItem('nws_push', '{str(st.session_state.push_enabled).lower()}');
+                        sessionStorage.removeItem('nws_redirected');
                     </script>
                     """
           components.html(update_js, height=0)

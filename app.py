@@ -136,8 +136,8 @@ lon_str = query_params.get("lon", default_lon)
 location_name = query_params.get("loc_name", "Marcus, IA")
 
 try:
-  ACTIVE_LAT = float(lat_str)
-  ACTIVE_LON = float(lon_str)
+  ACTIVE_LAT = round(float(lat_str), 4)
+  ACTIVE_LON = round(float(lon_str), 4)
 except ValueError:
   ACTIVE_LAT = float(default_lat)
   ACTIVE_LON = float(default_lon)
@@ -145,10 +145,10 @@ except ValueError:
 
 # --- HERO HEADER ---
 st.markdown(
-    f"""
+    """
 <div class="hero-banner">
     <div class="hero-title">📡 Marcus Weather Command</div>
-    <div class="hero-subtitle">Real-time NWS Telemetry & Regional Operations • Active Zone: {location_name} ({ACTIVE_LAT}, {ACTIVE_LON})</div>
+    <div class="hero-subtitle">Real-time NWS Telemetry & Regional Operations</div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -168,7 +168,6 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
 
     if submitted and loc_input.strip():
       try:
-        # Restricted to US to prevent international postal code collisions (e.g. Italy)
         geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(loc_input)}&format=json&countrycodes=us&limit=1"
         geo_resp = requests.get(
             geo_url, headers={"User-Agent": "MarcusWeatherApp"}, timeout=5
@@ -206,7 +205,6 @@ def load_live_weather(lat, lon, loc_label):
   if "selected_forecast_day" not in st.session_state:
     st.session_state.selected_forecast_day = None
 
-  # Fallback radar station code
   radar_station = "KFSD"
 
   # --- ACTIVE SEVERE WEATHER ALERTS ---
@@ -274,7 +272,6 @@ def load_live_weather(lat, lon, loc_label):
         st.error("Received malformed data telemetry from NWS servers.")
         return
 
-      # Dynamically grab the local NWS radar station associated with this coordinate point
       radar_station = points_response["properties"].get("radarStation", "KFSD")
 
       forecast_url = points_response["properties"].get("forecast")
@@ -451,12 +448,12 @@ def load_live_weather(lat, lon, loc_label):
 
     st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
 
-    # --- LIVE RADAR LOOP (Dynamically updated based on NWS station metadata) ---
+    # --- LIVE RADAR LOOP ---
     st.subheader(f"📡 Live Doppler Radar Loop ({radar_station})")
     cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime(
         "%I:%M:%S %p %Z"
     )
-    st.caption(f"🔄 Sync active • {cst_time} • Station: {radar_station} • Pin: {lat}, {lon}")
+    st.caption(f"🔄 Sync active • {cst_time} • Station: {radar_station}")
     radar_url = f"https://radar.weather.gov/ridge/standard/{radar_station}_loop.gif?t={int(time.time())}"
     with st.container(border=True):
       st.image(radar_url, use_container_width=True)

@@ -89,9 +89,21 @@ st.markdown("""
         border-left: 4px solid #0ea5e9;
         border-radius: 12px;
         padding: 14px 20px;
-        margin-bottom: 24px;
+        margin-bottom: 16px;
         color: #e0f2fe;
         font-size: 0.95rem;
+    }
+
+    .install-card {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(56, 189, 248, 0.15);
+        border-left: 4px solid #818cf8;
+        border-radius: 12px;
+        padding: 14px 20px;
+        margin-bottom: 24px;
+        color: #cbd5e1;
+        font-size: 0.92rem;
+        line-height: 1.5;
     }
 
     /* Alert Banners */
@@ -225,7 +237,7 @@ components.html("""
 st.markdown("""
 <div class="hero-banner">
     <div class="hero-title">📡 Marcus Weather Command</div>
-    <div class="hero-subtitle">Real-time NWS Radar & Reliable Communications • Cherokee County, IA</div>
+    <div class="hero-subtitle">Real-time NWS Telemetry & Regional GMRS Radio Operations • Cherokee County, IA</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -240,6 +252,15 @@ st.markdown("""
 st.markdown("""
 <div class="repeater-card">
     <strong>📻 GMRS REPEATER GOING ACTIVE — 12/01/2026:</strong> Tune your mobile/base stations to <strong>Channel 22</strong> (462.725 MHz) • <strong>PL Tone 123.0 Hz</strong>. Fully open for community use!
+</div>
+""", unsafe_allow_html=True)
+
+# --- INSTALLATION INSTRUCTIONS ---
+st.markdown("""
+<div class="install-card">
+    📲 <strong>Add to Home Screen:</strong> Install this dashboard on your mobile device for quick, app-like access:<br/>
+    • <strong>iOS (Safari):</strong> Tap the <strong>Share</strong> button at the bottom of the screen, scroll down, and select <strong>"Add to Home Screen"</strong>.<br/>
+    • <strong>Android (Chrome):</strong> Tap the <strong>Menu</strong> (three vertical dots) in the top right, and select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.
 </div>
 """, unsafe_allow_html=True)
 

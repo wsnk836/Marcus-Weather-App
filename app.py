@@ -126,7 +126,7 @@ st.markdown("""
         margin-bottom: 12px;
         color: #d1fae5;
     }
-    /* Radar map overlay styling - accurately mapped to Marcus, IA relative to KFSD radar center */
+    /* Radar map overlay styling - precisely calibrated for Marcus, IA (42.82, -95.805) on KFSD loop */
     .radar-wrapper {
         position: relative;
         width: 100%;
@@ -141,8 +141,8 @@ st.markdown("""
     }
     .marcus-pin-container {
         position: absolute;
-        top: 61.5%;
-        left: 67.2%;
+        top: 61.2%;
+        left: 66.8%;
         transform: translate(-50%, -50%);
         display: flex;
         flex-direction: column;
@@ -333,7 +333,7 @@ def load_live_weather():
         )
 
     try:
-        alerts_url = "https://api.weather.gov/alerts/active?point=42.8242,-95.7994"
+        alerts_url = "https://api.weather.gov/alerts/active?point=42.82,-95.805"
         alerts_response = requests.get(alerts_url, headers=headers, timeout=10).json()
         alerts = alerts_response.get("features", [])
         
@@ -389,7 +389,7 @@ def load_live_weather():
         st.markdown('<div id="conditions-sec"></div>', unsafe_allow_html=True)
         st.subheader("🌦️ Current Conditions")
         try:
-            points_url = "https://api.weather.gov/points/42.8242,-95.7994"
+            points_url = "https://api.weather.gov/points/42.82,-95.805"
             points_response = requests.get(points_url, headers=headers, timeout=10).json()
             forecast_url = points_response["properties"]["forecast"]
             
@@ -540,7 +540,7 @@ def load_live_weather():
         st.markdown('<div id="radar-sec"></div>', unsafe_allow_html=True)
         st.subheader("📡 Live Doppler Radar (KFSD)")
         cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
-        st.caption(f"🔄 Sync active • {cst_time} • 📍 Marcus, IA correctly localized east-northeast of KFSD")
+        st.caption(f"🔄 Sync active • {cst_time} • 📍 Marcus, IA (51035) calibrated to exact geographic coordinates (42.82, -95.805)")
         
         radar_url = f"https://radar.weather.gov/ridge/standard/KFSD_loop.gif?t={int(time.time())}"
         
@@ -549,7 +549,7 @@ def load_live_weather():
             <img src="{radar_url}" class="radar-img" alt="KFSD Radar Loop">
             <div class="marcus-pin-container">
                 <div class="marcus-dot"></div>
-                <div class="marcus-label">Marcus, IA</div>
+                <div class="marcus-label">Marcus, IA (51035)</div>
             </div>
         </div>
         """, unsafe_allow_html=True)

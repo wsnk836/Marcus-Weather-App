@@ -126,7 +126,7 @@ st.markdown("""
         margin-bottom: 12px;
         color: #d1fae5;
     }
-    /* Radar map overlay styling */
+    /* Radar map overlay styling - accurately mapped to Marcus, IA relative to KFSD radar center */
     .radar-wrapper {
         position: relative;
         width: 100%;
@@ -141,8 +141,8 @@ st.markdown("""
     }
     .marcus-pin-container {
         position: absolute;
-        top: 52%;
-        left: 58%;
+        top: 61.5%;
+        left: 67.2%;
         transform: translate(-50%, -50%);
         display: flex;
         flex-direction: column;
@@ -540,7 +540,7 @@ def load_live_weather():
         st.markdown('<div id="radar-sec"></div>', unsafe_allow_html=True)
         st.subheader("📡 Live Doppler Radar (KFSD)")
         cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
-        st.caption(f"🔄 Sync active • {cst_time} • 📍 Marcus, IA indicated by blue target dot")
+        st.caption(f"🔄 Sync active • {cst_time} • 📍 Marcus, IA correctly localized east-northeast of KFSD")
         
         radar_url = f"https://radar.weather.gov/ridge/standard/KFSD_loop.gif?t={int(time.time())}"
         

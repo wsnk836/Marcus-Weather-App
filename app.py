@@ -218,6 +218,12 @@ def load_live_weather():
         "Accept": "application/geo+json"
     }
 
+    # --- INITIALIZE SESSION STATE FOR SELECTED DAY ---
+    if "selected_outlook_tab" not in st.session_state:
+        st.session_state.selected_outlook_tab = "3-Day"
+    if "selected_forecast_day" not in st.session_state:
+        st.session_state.selected_forecast_day = None
+
     # --- ACTIVE SEVERE WEATHER ALERTS ---
     st.markdown('<div id="alerts-sec"></div>', unsafe_allow_html=True)
     st.subheader("⚠️ Active NWS Weather Alerts")
@@ -294,7 +300,6 @@ def load_live_weather():
                 is_day = p['isDaytime']
                 temp_str = f"{p['temperature']}°{p['temperatureUnit']}"
                 
-                # Determine canonical day key
                 if is_day:
                     day_key = name
                 else:
@@ -331,51 +336,47 @@ def load_live_weather():
 
             daily_forecasts = list(daily_map.values())
 
+            # Set default selected day if not set
+            if not st.session_state.selected_forecast_day or st.session_state.selected_forecast_day not in [d['day'] for d in daily_forecasts]:
+                st.session_state.selected_forecast_day = daily_forecasts[0]['day']
+
             # --- EXTENDED FORECAST TABS ---
             st.subheader("📅 Outlook")
             tab3, tab7 = st.tabs(["3-Day", "7-Day"])
             
             with tab3:
                 st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
-                days_to_show = daily_forecasts[:3]
-                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 8px;'>👆 Select a day below to pull up full NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
-                selected_day_3 = st.radio("Select Outlook Day", [d['day'] for d in days_to_show], horizontal=True, label_visibility="collapsed", key="radio_3day")
+                days_to_show_3 = daily_forecasts[:3]
+                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 6px;'>👆 Select a day below to pull up full NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
+                
+                cols3 = st.columns(len(days_to_show_3))
+                for idx, d_item in enumerate(days_to_show_3):
+                    with cols3[idx]:
+                        is_selected = (d_item['day'] == st.session_state.selected_forecast_day)
+                        btn_label = f"📍 {d_item['day']}" if is_selected else d_item['day']
+                        if st.button(btn_label, key=f"btn_3d_{idx}_{d_item['day']}", use_container_width=True):
+                            st.session_state.selected_forecast_day = d_item['day']
+                            st.rerun()
 
             with tab7:
                 st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
-                days_to_show = daily_forecasts[:7]
-                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 8px;'>👆 Select a day below to pull up full NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
-                selected_day_7 = st.radio("Select Outlook Day 7", [d['day'] for d in days_to_show], horizontal=True, label_visibility="collapsed", key="radio_7day")
+                days_to_show_7 = daily_forecasts[:7]
+                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 6px;'>👆 Select a day below to pull up full NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
+                
+                cols7 = st.columns(len(days_to_show_7))
+                for idx, d_item in enumerate(days_to_show_7):
+                    with cols7[idx]:
+                        is_selected = (d_item['day'] == st.session_state.selected_forecast_day)
+                        btn_label = f"📍 {d_item['day']}" if is_selected else d_item['day']
+                        if st.button(btn_label, key=f"btn_7d_{idx}_{d_item['day']}", use_container_width=True):
+                            st.session_state.selected_forecast_day = d_item['day']
+                            st.rerun()
 
-            # --- NATIVE STREAMLIT BUTTON GRID (FULL DAY SELECTOR CARDS) ---
-            active_tab_days = daily_forecasts[:3] if st.session_state.get("radio_3day", True) else daily_forecasts[:7]
-            
-            active_selected_day = daily_forecasts[0]['day']
-            if st.session_state.get("radio_3day"):
-                active_selected_day = st.session_state.radio_3day
-            if st.session_state.get("radio_7day"):
-                active_selected_day = st.session_state.radio_7day
-
-            st.markdown("<p style='color: #71717a; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; margin: 12px 0 6px 0;'>Interactive Day Selection Layer:</p>", unsafe_allow_html=True)
-            
-            cols = st.columns(len(active_tab_days))
-            for idx, d_item in enumerate(active_tab_days):
-                with cols[idx]:
-                    is_selected = (d_item['day'] == active_selected_day)
-                    btn_label = f"📍 {d_item['day']}" if is_selected else d_item['day']
-                    if st.button(btn_label, key=f"day_btn_{idx}_{d_item['day']}", use_container_width=True):
-                        if len(active_tab_days) <= 3:
-                            st.session_state.radio_3day = d_item['day']
-                        else:
-                            st.session_state.radio_7day = d_item['day']
-                        st.rerun()
-
-            selected_record = next((d for d in daily_forecasts if d['day'] == active_selected_day), daily_forecasts[0])
+            selected_record = next((d for d in daily_forecasts if d['day'] == st.session_state.selected_forecast_day), daily_forecasts[0])
 
             display_high = selected_record['high']
             display_low = selected_record['low']
             
-            # Absolute foolproof fallback so N/A never appears in high/low metrics
             current_temp_str = f"{current['temperature']}°{current['temperatureUnit']}"
             if display_high == "N/A":
                 display_high = current_temp_str
@@ -503,7 +504,7 @@ requests_comp.html("""
             cursor: pointer;
             width: 100%;
             margin-top: 4px;
-            transition: opacity 0.2s;
+            transition: opacity: 0.2s;
         }
         button:hover { opacity: 0.9; }
         #result { margin-top: 8px; font-size: 0.88rem; text-align: center; }

@@ -331,11 +331,20 @@ def load_live_weather():
                     wind_speed = p['windSpeed']
                     wind_dir = p.get('windDirection', '')
                     
+                    # Check if the next period is a daytime period belonging to this initial block
+                    high_temp = "N/A"
+                    day_detailed = ""
+                    if i + 1 < len(periods) and periods[i+1]['isDaytime']:
+                        day_p = periods[i+1]
+                        high_temp = f"{day_p['temperature']}°{day_p['temperatureUnit']}"
+                        day_detailed = day_p['detailedForecast']
+                        i += 1
+
                     daily_forecasts.append({
                         "day": day_label,
-                        "high": "N/A",
+                        "high": high_temp,
                         "low": low_temp,
-                        "detailed": "",
+                        "detailed": day_detailed,
                         "low_detailed": night_detailed,
                         "wind_speed": wind_speed,
                         "wind_dir": wind_dir

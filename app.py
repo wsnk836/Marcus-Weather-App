@@ -64,33 +64,6 @@ st.markdown("""
         text-transform: uppercase;
         font-weight: 500;
     }
-    .quick-nav-container {
-        display: flex;
-        gap: 8px;
-        background: #121316;
-        border: 1px solid #27272a;
-        border-radius: 12px;
-        padding: 10px;
-        margin-bottom: 20px;
-        overflow-x: auto;
-    }
-    .quick-nav-btn {
-        background: #18191f;
-        border: 1px solid #27272a;
-        color: #d4d4d8;
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: all 0.2s ease;
-    }
-    .quick-nav-btn:hover {
-        background: #ef4444;
-        color: #0c0d10;
-        border-color: #ef4444;
-    }
     .command-card {
         background: #121316;
         border: 1px solid #27272a;
@@ -204,6 +177,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- HERO HEADER ---
+st.markdown("""
+<div class="hero-banner">
+    <div class="hero-title">📡 Weather Command</div>
+    <div class="hero-subtitle">Real-time NWS Telemetry & Live Device Geolocation</div>
+</div>
+""", unsafe_allow_html=True)
+
 # --- GEOLOCATION JAVASCRIPT BRIDGE ---
 requests_comp.html("""
 <script>
@@ -223,7 +204,7 @@ requests_comp.html("""
                 (error) => {
                     console.warn("Geolocation access denied or failed: ", error.message);
                 },
-                { timeout: 10000, maximumAge: 60000 }
+                { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
             );
         }
     }
@@ -232,20 +213,36 @@ requests_comp.html("""
 """, height=0, width=0)
 
 query_params = st.query_params
-try:
-    user_lat = float(query_params.get("lat", 42.82))
-    user_lon = float(query_params.get("lon", -95.805))
-except ValueError:
-    user_lat = 42.82
-    user_lon = -95.805
+user_lat = query_params.get("lat")
+user_lon = query_params.get("lon")
 
-# --- HERO HEADER ---
-st.markdown("""
-<div class="hero-banner">
-    <div class="hero-title">📡 Weather Command</div>
-    <div class="hero-subtitle">Real-time NWS Telemetry & Browser Geolocation Tracking</div>
-</div>
-""", unsafe_allow_html=True)
+# If geolocation coordinates are not yet available in query parameters, prompt the user
+if not user_lat or not user_lon:
+    st.markdown("""
+    <div class="command-card welcome-card" style="text-align: center; padding: 40px 20px;">
+        <h3>📍 Location Access Required</h3>
+        <p style="color: #a1a1aa; margin-top: 10px;">
+            Please allow location access in your browser prompt to anchor your live position on the weather radar and load local NWS telemetry.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.expander("📍 Or Enter Coordinates Manually"):
+        with st.form("manual_coord_form"):
+            man_lat = st.number_input("Latitude", value=42.82, format="%.4f")
+            man_lon = st.number_input("Longitude", value=-95.805, format="%.4f")
+            if st.form_submit_button("Load Location"):
+                st.query_params["lat"] = str(man_lat)
+                st.query_params["lon"] = str(man_lon)
+                st.rerun()
+    st.stop()
+
+try:
+    lat = float(user_lat)
+    lon = float(user_lon)
+except ValueError:
+    st.error("Invalid coordinates provided in URL parameters.")
+    st.stop()
 
 @st.fragment(run_every=60)
 def load_live_weather(lat, lon):
@@ -414,7 +411,7 @@ def load_live_weather(lat, lon):
 
         st.subheader(f"📡 Live Doppler Radar ({radar_station})")
         cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
-        st.caption(f"🔄 Sync active • {cst_time} • 📍 Pin dynamically anchored to coordinates ({lat}, {lon})")
+        st.caption(f"🔄 Sync active • {cst_time} • 📍 Device location anchored to ({lat:.4f}, {lon:.4f})")
         
         radar_url = f"https://radar.weather.gov/ridge/standard/{radar_station}_loop.gif?t={int(time.time())}"
         
@@ -423,7 +420,7 @@ def load_live_weather(lat, lon):
             <img src="{radar_url}" class="radar-img" alt="Radar Loop">
             <div class="user-pin-container">
                 <div class="user-dot"></div>
-                <div class="user-label">Your Location</div>
+                <div class="user-label">Your Device Location</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -431,13 +428,13 @@ def load_live_weather(lat, lon):
     with col_right:
         st.markdown("""
         <div class="command-card welcome-card">
-            👋 <strong>Welcome to Weather Command.</strong> This dashboard automatically requests your browser's geolocation to lock your pin precisely on the regional Doppler radar loop and retrieve active NWS weather alerts.
+            👋 <strong>Device Location Locked.</strong> This dashboard uses your device's live browser GPS telemetry to pull regional NWS radar loops and active weather alerts.
         </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("📍 Coordinates Override")
+        st.subheader("📍 Location Override")
         with st.form("coord_form"):
-            st.write("Manually adjust coordinates if geolocation is unavailable:")
+            st.write("Manually adjust coordinates if needed:")
             manual_lat = st.number_input("Latitude", value=lat, format="%.4f")
             manual_lon = st.number_input("Longitude", value=lon, format="%.4f")
             submitted = st.form_submit_button("Update Location")
@@ -446,4 +443,4 @@ def load_live_weather(lat, lon):
                 st.query_params["lon"] = str(manual_lon)
                 st.rerun()
 
-load_live_weather(user_lat, user_lon)
+load_live_weather(lat, lon)

@@ -407,8 +407,9 @@ def load_live_weather():
                     low = "N/A"
                     low_detailed = ""
                     if i + 1 < len(periods) and not periods[i+1]['isDaytime']:
-                        low = f"{periods[i+1]['temperature']}°{periods[i+1]['temperatureUnit']}"
-                        low_detailed = periods[i+1]['detailedForecast']
+                        night_p = periods[i+1]
+                        low = f"{night_p['temperature']}°{night_p['temperatureUnit']}"
+                        low_detailed = night_p['detailedForecast']
                         i += 1 
                     
                     daily_forecasts.append({
@@ -600,13 +601,11 @@ def load_live_weather():
 
             # --- DETAILED NWS SIOUX FALLS DRILL-DOWN CONTAINER ---
             active_selected_day = selected_day_3 if 'tab3' in locals() and 'selected_day_3' in locals() else daily_forecasts[0]['day']
-            # Determine which radio button was recently interacted with
             if st.session_state.get("radio_3day"):
                 active_selected_day = st.session_state.radio_3day
             if st.session_state.get("radio_7day"):
                 active_selected_day = st.session_state.radio_7day
 
-            # Find matching forecast data for active selection
             selected_record = next((d for d in daily_forecasts if d['day'] == active_selected_day), daily_forecasts[0])
 
             st.markdown(f"""

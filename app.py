@@ -17,7 +17,6 @@ st.set_page_config(
 requests_comp.html("""
 <script>
     window.parent.document.title = "Marcus Weather Command";
-    
     let metaApple = window.parent.document.createElement('meta');
     metaApple.name = "apple-mobile-web-app-title";
     metaApple.content = "Marcus Weather";
@@ -30,17 +29,14 @@ requests_comp.html("""
 </script>
 """, height=0, width=0)
 
-# --- REDESIGNED TACTICAL CRIMSON & CARBON CSS (WITH HORIZONTAL SCROLL) ---
+# --- TACTICAL CRIMSON & CARBON CSS ---
 st.markdown("""
 <style>
-    /* Global App Styling - Tactical Carbon & Crimson Alert Palette */
     .stApp {
         background-color: #0c0d10;
         color: #f4f4f5;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-
-    /* Hero Header Banner */
     .hero-banner {
         background: linear-gradient(145deg, #18191f 0%, #0e0f12 100%);
         border: 1px solid #27272a;
@@ -50,7 +46,6 @@ st.markdown("""
         margin-bottom: 16px;
         box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.7);
     }
-    
     .hero-title {
         font-size: 2rem;
         font-weight: 800;
@@ -61,7 +56,6 @@ st.markdown("""
         gap: 12px;
         letter-spacing: -0.02em;
     }
-
     .hero-subtitle {
         color: #a1a1aa;
         font-size: 0.92rem;
@@ -70,8 +64,6 @@ st.markdown("""
         text-transform: uppercase;
         font-weight: 500;
     }
-
-    /* Quick Access Nav Bar */
     .quick-nav-container {
         display: flex;
         gap: 8px;
@@ -99,8 +91,6 @@ st.markdown("""
         color: #0c0d10;
         border-color: #ef4444;
     }
-
-    /* Command Grid Cards */
     .command-card {
         background: #121316;
         border: 1px solid #27272a;
@@ -111,25 +101,14 @@ st.markdown("""
         font-size: 0.96rem;
         line-height: 1.5;
     }
-
-    .welcome-card {
-        border-left: 4px solid #ef4444;
-    }
-
+    .welcome-card { border-left: 4px solid #ef4444; }
     .repeater-card {
         background: rgba(239, 68, 68, 0.05);
         border: 1px solid rgba(239, 68, 68, 0.2);
         border-left: 4px solid #f87171;
         color: #fee2e2;
     }
-
-    .install-card {
-        border-left: 4px solid #38bdf8;
-        color: #d4d4d8;
-        font-size: 0.9rem;
-    }
-
-    /* Alert Banners */
+    .install-card { border-left: 4px solid #38bdf8; color: #d4d4d8; font-size: 0.9rem; }
     .alert-card-severe {
         background: rgba(239, 68, 68, 0.12);
         border: 1px solid rgba(239, 68, 68, 0.3);
@@ -138,7 +117,6 @@ st.markdown("""
         padding: 14px 18px;
         margin-bottom: 12px;
     }
-
     .alert-card-clear {
         background: rgba(16, 185, 129, 0.08);
         border: 1px solid rgba(16, 185, 129, 0.25);
@@ -148,8 +126,6 @@ st.markdown("""
         margin-bottom: 12px;
         color: #d1fae5;
     }
-
-    /* Metrics Styling */
     [data-testid="stMetric"] {
         background: #121316;
         border: 1px solid #27272a;
@@ -168,76 +144,7 @@ st.markdown("""
         font-weight: 700 !important;
         color: #fafafa !important;
     }
-
-    /* --- HORIZONTAL SCROLLABLE OUTLOOK CONTAINER STYLING --- */
-    .horizontal-scroll-container {
-        display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        gap: 12px;
-        padding-bottom: 10px;
-        width: 100%;
-        scroll-behavior: smooth;
-    }
-    
-    .horizontal-scroll-container::-webkit-scrollbar {
-        height: 6px;
-    }
-    
-    .horizontal-scroll-container::-webkit-scrollbar-track {
-        background: #121316;
-        border-radius: 4px;
-    }
-    
-    .horizontal-scroll-container::-webkit-scrollbar-thumb {
-        background: #27272a;
-        border-radius: 4px;
-    }
-
-    .horizontal-scroll-container::-webkit-scrollbar-thumb:hover {
-        background: #ef4444;
-    }
-
-    /* Outlook Card Styles */
-    .outlook-card {
-        background: #121316 !important;
-        border: 1px solid #27272a !important;
-        border-radius: 10px !important;
-        padding: 12px 14px !important;
-        min-width: 130px;
-        flex: 0 0 auto;
-        transition: all 0.2s ease-in-out;
-    }
-
-    .outlook-card:hover {
-        border-color: #ef4444 !important;
-        transform: translateY(-2px);
-    }
-
-    .digital-icon-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 4px 0;
-    }
-    
-    .digital-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        background: #18191f;
-        border: 1px solid #27272a;
-        padding: 4px;
-        object-fit: contain;
-        display: block;
-    }
-
-    /* Tabs UI Polish */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: transparent;
-    }
-
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; background-color: transparent; }
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
         padding: 4px 12px;
@@ -247,26 +154,20 @@ st.markdown("""
         font-weight: 600;
         font-size: 0.85rem;
     }
-
     .stTabs [aria-selected="true"] {
         background: #ef4444 !important;
         color: #0c0d10 !important;
         border-color: #ef4444 !important;
         font-weight: 700 !important;
     }
-
     @media (max-width: 768px) {
-        .block-container {
-            padding: 1rem 0.75rem !important;
-        }
-        .hero-title {
-            font-size: 1.4rem;
-        }
+        .block-container { padding: 1rem 0.75rem !important; }
+        .hero-title { font-size: 1.4rem; }
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- MOBILE KEEP-ALIVE & AUTO-RECONNECT WATCHDOG ---
+# --- MOBILE KEEP-ALIVE WATCHDOG ---
 requests_comp.html("""
 <script>
     document.addEventListener("visibilitychange", function() {
@@ -288,7 +189,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- QUICK ACCESS AUTO-SCROLL NAV BAR ---
+# --- QUICK ACCESS NAV BAR ---
 requests_comp.html("""
 <div class="quick-nav-container">
     <button class="quick-nav-btn" onclick="scrollToSec('alerts-sec')">⚠️ Alerts</button>
@@ -301,9 +202,7 @@ requests_comp.html("""
 <script>
     function scrollToSec(id) {
         const el = window.parent.document.getElementById(id);
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     }
 </script>
 """, height=60, scrolling=False)
@@ -334,7 +233,6 @@ def load_live_weather():
                 headline = props.get("headline", "Severe weather alert issued.")
                 description = props.get("description", "No description provided.")
                 severity = props.get("severity", "Unknown")
-                
                 status_color = "#ef4444" if severity in ["Extreme", "Severe"] else "#f87171"
                 
                 st.markdown(f"""
@@ -375,7 +273,6 @@ def load_live_weather():
             
             current = periods[0]
             
-            # Current Metric Row
             m1, m2, m3 = st.columns(3)
             with m1:
                 st.metric("🌡️ Temp", f"{current['temperature']}°{current['temperatureUnit']}")
@@ -444,167 +341,47 @@ def load_live_weather():
                     })
                 i += 1
 
-            # --- EXTENDED FORECAST TABS WITH HORIZONTAL SCROLL ---
+            # --- EXTENDED FORECAST TABS ---
             st.subheader("📅 Outlook")
             tab3, tab7 = st.tabs(["3-Day", "7-Day"])
             
             with tab3:
                 st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
                 days_to_show = daily_forecasts[:3]
-                
-                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 8px;'>👆 Tap a day below to pull up detailed NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
+                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 8px;'>👆 Select a day below to pull up full NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
                 selected_day_3 = st.radio("Select Outlook Day", [d['day'] for d in days_to_show], horizontal=True, label_visibility="collapsed", key="radio_3day")
-                
-                cards_html = '<div class="horizontal-scroll-container">'
-                for day_data in days_to_show:
-                    icon_img = f'<div class="digital-icon-container"><img src="{day_data["icon"]}" class="digital-icon" alt="icon"/></div>' if day_data['icon'] else ''
-                    cards_html += f"""
-                    <div class="outlook-card">
-                        <div style="font-weight: 700; font-size: 0.85rem; color: #f4f4f5; margin-bottom: 4px;">{day_data['day']}</div>
-                        {icon_img}
-                        <div style="font-size: 0.75rem; color: #a1a1aa; margin-top: 4px;">H: {day_data['high']} | L: {day_data['low']}</div>
-                        <div style="font-size: 0.72rem; color: #d4d4d8; margin-top: 4px; line-height: 1.2;">{day_data['forecast']}</div>
-                    </div>
-                    """
-                cards_html += '</div>'
-                requests_comp.html(f"""
-                <style>
-                    body {{
-                        background-color: transparent;
-                        margin: 0;
-                        padding: 0;
-                        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    }}
-                    .horizontal-scroll-container {{
-                        display: flex;
-                        flex-direction: row;
-                        overflow-x: auto;
-                        gap: 12px;
-                        padding-bottom: 10px;
-                        width: 100%;
-                        scroll-behavior: smooth;
-                    }}
-                    .horizontal-scroll-container::-webkit-scrollbar {{
-                        height: 6px;
-                    }}
-                    .horizontal-scroll-container::-webkit-scrollbar-track {{
-                        background: #121316;
-                        border-radius: 4px;
-                    }}
-                    .horizontal-scroll-container::-webkit-scrollbar-thumb {{
-                        background: #27272a;
-                        border-radius: 4px;
-                    }}
-                    .outlook-card {{
-                        background: #121316;
-                        border: 1px solid #27272a;
-                        border-radius: 10px;
-                        padding: 12px 14px;
-                        min-width: 130px;
-                        flex: 0 0 auto;
-                    }}
-                    .digital-icon-container {{
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        margin: 4px 0;
-                    }}
-                    .digital-icon {{
-                        width: 32px;
-                        height: 32px;
-                        border-radius: 6px;
-                        background: #18191f;
-                        border: 1px solid #27272a;
-                        padding: 4px;
-                        object-fit: contain;
-                        display: block;
-                    }}
-                </style>
-                {cards_html}
-                """, height=150, scrolling=False)
 
             with tab7:
                 st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
                 days_to_show = daily_forecasts[:7]
-                
-                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 8px;'>👆 Tap a day below to pull up detailed NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
+                st.markdown("<p style='color: #a1a1aa; font-size: 0.8rem; margin-bottom: 8px;'>👆 Select a day below to pull up full NWS Sioux Falls telemetry:</p>", unsafe_allow_html=True)
                 selected_day_7 = st.radio("Select Outlook Day 7", [d['day'] for d in days_to_show], horizontal=True, label_visibility="collapsed", key="radio_7day")
-                
-                cards_html_7 = '<div class="horizontal-scroll-container">'
-                for day_data in days_to_show:
-                    icon_img = f'<div class="digital-icon-container"><img src="{day_data["icon"]}" class="digital-icon" alt="icon"/></div>' if day_data['icon'] else ''
-                    cards_html_7 += f"""
-                    <div class="outlook-card">
-                        <div style="font-weight: 700; font-size: 0.85rem; color: #f4f4f5; margin-bottom: 4px;">{day_data['day']}</div>
-                        {icon_img}
-                        <div style="font-size: 0.75rem; color: #a1a1aa; margin-top: 4px;">H: {day_data['high']} | L: {day_data['low']}</div>
-                        <div style="font-size: 0.72rem; color: #d4d4d8; margin-top: 4px; line-height: 1.2;">{day_data['forecast']}</div>
-                    </div>
-                    """
-                cards_html_7 += '</div>'
-                requests_comp.html(f"""
-                <style>
-                    body {{
-                        background-color: transparent;
-                        margin: 0;
-                        padding: 0;
-                        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    }}
-                    .horizontal-scroll-container {{
-                        display: flex;
-                        flex-direction: row;
-                        overflow-x: auto;
-                        gap: 12px;
-                        padding-bottom: 10px;
-                        width: 100%;
-                        scroll-behavior: smooth;
-                    }}
-                    .horizontal-scroll-container::-webkit-scrollbar {{
-                        height: 6px;
-                    }}
-                    .horizontal-scroll-container::-webkit-scrollbar-track {{
-                        background: #121316;
-                        border-radius: 4px;
-                    }}
-                    .horizontal-scroll-container::-webkit-scrollbar-thumb {{
-                        background: #27272a;
-                        border-radius: 4px;
-                    }}
-                    .outlook-card {{
-                        background: #121316;
-                        border: 1px solid #27272a;
-                        border-radius: 10px;
-                        padding: 12px 14px;
-                        min-width: 130px;
-                        flex: 0 0 auto;
-                    }}
-                    .digital-icon-container {{
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        margin: 4px 0;
-                    }}
-                    .digital-icon {{
-                        width: 32px;
-                        height: 32px;
-                        border-radius: 6px;
-                        background: #18191f;
-                        border: 1px solid #27272a;
-                        padding: 4px;
-                        object-fit: contain;
-                        display: block;
-                    }}
-                </style>
-                {cards_html_7}
-                """, height=150, scrolling=False)
 
-            # --- DETAILED NWS SIOUX FALLS DRILL-DOWN CONTAINER ---
+            # --- NATIVE STREAMLIT BUTTON GRID (FULL DAY SELECTOR CARDS) ---
+            active_tab_days = daily_forecasts[:3] if st.session_state.get("radio_3day", True) else daily_forecasts[:7]
+            # Fallback determination for active selected day
             active_selected_day = daily_forecasts[0]['day']
             if st.session_state.get("radio_3day"):
                 active_selected_day = st.session_state.radio_3day
             if st.session_state.get("radio_7day"):
                 active_selected_day = st.session_state.radio_7day
 
+            st.markdown("<p style='color: #71717a; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; margin: 12px 0 6px 0;'>Interactive Day Selection Layer:</p>", unsafe_allow_html=True)
+            
+            cols = st.columns(len(active_tab_days))
+            for idx, d_item in enumerate(active_tab_days):
+                with cols[idx]:
+                    is_selected = (d_item['day'] == active_selected_day)
+                    btn_label = f"📍 {d_item['day']}" if is_selected else d_item['day']
+                    if st.button(btn_label, key=f"day_btn_{idx}_{d_item['day']}", use_container_width=True):
+                        # Update session state dynamically
+                        if len(active_tab_days) <= 3:
+                            st.session_state.radio_3day = d_item['day']
+                        else:
+                            st.session_state.radio_7day = d_item['day']
+                        st.rerun()
+
+            # Re-evaluate selected record after button click
             selected_record = next((d for d in daily_forecasts if d['day'] == active_selected_day), daily_forecasts[0])
 
             display_high = selected_record['high']
@@ -619,19 +396,20 @@ def load_live_weather():
                         elif not p['isDaytime'] and display_low == "N/A":
                             display_low = f"{p['temperature']}°{p['temperatureUnit']}"
 
+            # --- FULL FORECAST DRILL-DOWN LAYER ---
             st.markdown(f"""
-            <div style="background: #18191f; border: 1px solid #27272a; border-left: 3px solid #ef4444; border-radius: 10px; padding: 16px 18px; margin-top: 15px;">
-                <div style="font-weight: 700; color: #f87171; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                    🏛️ NWS Sioux Falls Official Detailed Telemetry • {selected_record['day']}
+            <div style="background: #18191f; border: 1px solid #27272a; border-left: 3px solid #ef4444; border-radius: 10px; padding: 18px 20px; margin-top: 15px;">
+                <div style="font-weight: 700; color: #f87171; font-size: 1.05rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                    🏛️ Full NWS Forecast Report • {selected_record['day']}
                 </div>
-                <div style="font-size: 0.88rem; color: #f4f4f5; margin-bottom: 6px; line-height: 1.5;">
-                    <strong>Forecast Details:</strong> {selected_record['detailed']}
+                <div style="font-size: 0.92rem; color: #f4f4f5; margin-bottom: 8px; line-height: 1.6;">
+                    <strong>Daytime Forecast:</strong> {selected_record['detailed']}
                 </div>
-                {f'<div style="font-size: 0.88rem; color: #d4d4d8; margin-bottom: 8px; line-height: 1.5;"><strong>Extended Night Telemetry:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
-                <div style="display: flex; gap: 16px; margin-top: 10px; font-size: 0.82rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 8px;">
+                {f'<div style="font-size: 0.92rem; color: #d4d4d8; margin-bottom: 12px; line-height: 1.6;"><strong>Nighttime Forecast:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
+                <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 0.85rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 10px;">
                     <div>🌡️ High: <strong style="color: #fafafa;">{display_high}</strong></div>
                     <div>🌡️ Low: <strong style="color: #fafafa;">{display_low}</strong></div>
-                    <div>💨 Wind Vector: <strong style="color: #fafafa;">{selected_record['wind_speed']} ({selected_record['wind_dir']})</strong></div>
+                    <div>💨 Wind: <strong style="color: #fafafa;">{selected_record['wind_speed']} ({selected_record['wind_dir']})</strong></div>
                     <div>📡 Station: <strong style="color: #fafafa;">NWS Sioux Falls (KFSD)</strong></div>
                 </div>
             </div>
@@ -703,16 +481,9 @@ requests_comp.html("""
             margin: 0;
             padding: 0;
         }
-        .form-group {
-            margin-bottom: 12px;
-        }
-        .row {
-            display: flex;
-            gap: 12px;
-        }
-        .col {
-            flex: 1;
-        }
+        .form-group { margin-bottom: 12px; }
+        .row { display: flex; gap: 12px; }
+        .col { flex: 1; }
         label {
             display: block;
             font-size: 0.82rem;
@@ -733,13 +504,8 @@ requests_comp.html("""
             outline: none;
             transition: border-color 0.2s;
         }
-        input:focus, textarea:focus {
-            border-color: #ef4444;
-        }
-        textarea {
-            resize: vertical;
-            height: 80px;
-        }
+        input:focus, textarea:focus { border-color: #ef4444; }
+        textarea { resize: vertical; height: 80px; }
         button {
             background: #ef4444;
             color: #0c0d10;
@@ -753,14 +519,8 @@ requests_comp.html("""
             margin-top: 4px;
             transition: opacity 0.2s;
         }
-        button:hover {
-            opacity: 0.9;
-        }
-        #result {
-            margin-top: 8px;
-            font-size: 0.88rem;
-            text-align: center;
-        }
+        button:hover { opacity: 0.9; }
+        #result { margin-top: 8px; font-size: 0.88rem; text-align: center; }
     </style>
 </head>
 <body>

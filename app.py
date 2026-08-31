@@ -167,34 +167,61 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- MOBILE KEEP-ALIVE & PUSH NOTIFICATION WATCHDOG ---
+# --- BACKGROUND WAKE LOCK & PERSISTENT NOTIFICATION ENGINE ---
 requests_comp.html("""
 <script>
-    document.addEventListener("visibilitychange", function() {
-        if (document.visibilityState === "visible") {
-            window.parent.location.reload();
+    // Request Screen Wake Lock to prevent mobile browsers from sleeping app loop
+    let wakeLock = null;
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Wake Lock active: App will remain awake for alerts.');
+            }
+        } catch (err) {
+            console.log(`Wake Lock error: ${err.name}, ${err.message}`);
+        }
+    }
+    requestWakeLock();
+
+    // Re-acquire wake lock if visibility changes back to app
+    document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+            await requestWakeLock();
         }
     });
-    setTimeout(function() {
-        window.parent.location.reload();
-    }, 600000);
 
-    // Global Browser Notification Handler injected into top-level window
+    // Global Browser Notification Handler with Permission Persistence
     window.parent.requestWeatherNotification = function(title, bodyText) {
         if (!("Notification" in window.parent)) {
-            console.log("This browser does not support desktop notification");
+            console.log("This browser does not support desktop notifications.");
             return;
         }
+        
         if (window.parent.Notification.permission === "granted") {
-            new window.parent.Notification(title, { body: bodyText, icon: "https://radar.weather.gov/ridge/standard/KFSD_loop.gif" });
+            try {
+                new window.parent.Notification(title, { 
+                    body: bodyText, 
+                    icon: "https://radar.weather.gov/ridge/standard/KFSD_loop.gif",
+                    tag: "marcus-weather-alert",
+                    renotify: true
+                });
+            } catch(e) {
+                console.log("Notification error: ", e);
+            }
         } else if (window.parent.Notification.permission !== "denied") {
             window.parent.Notification.requestPermission().then(function (permission) {
                 if (permission === "granted") {
-                    new window.parent.Notification(title, { body: bodyText, icon: "https://radar.weather.gov/ridge/standard/KFSD_loop.gif" });
+                    new window.parent.Notification(title, { 
+                        body: bodyText, 
+                        icon: "https://radar.weather.gov/ridge/standard/KFSD_loop.gif",
+                        tag: "marcus-weather-alert",
+                        renotify: true
+                    });
                 }
             });
         }
-    }
+    };
 </script>
 """, height=0, width=0)
 
@@ -240,11 +267,9 @@ def load_live_weather():
         st.session_state.selected_forecast_day = None
 
     if "enable_push_alerts" not in st.session_state:
-        # Check query parameters on first load
-        param_val = st.query_params.get("push_alerts", "false")
+        param_val = st.query_params.get("push_alerts", "true") # Default to True for seamless alert coverage
         st.session_state.enable_push_alerts = (str(param_val).lower() == "true")
 
-    # Callback function to instantly lock toggle state into URL parameters
     def update_push_preference():
         st.query_params["push_alerts"] = str(st.session_state.enable_push_alerts).lower()
 
@@ -259,7 +284,7 @@ def load_live_weather():
             "🔔 Push Alerts", 
             key="enable_push_alerts", 
             on_change=update_push_preference,
-            help="Enable browser push notifications when severe weather is active."
+            help="Keep persistent browser notifications locked ON."
         )
 
     try:
@@ -268,11 +293,9 @@ def load_live_weather():
         alerts = alerts_response.get("features", [])
         
         if len(alerts) > 0:
-            # Trigger Browser Notification if toggled on
             if st.session_state.enable_push_alerts:
                 first_alert_title = alerts[0].get("properties", {}).get("event", "Severe Weather Warning")
                 first_alert_desc = alerts[0].get("properties", {}).get("headline", "New NWS weather alert active for Marcus, IA.")
-                # Sanitize strings to inject safely into JS component call
                 safe_title = first_alert_title.replace('"', '\\"')
                 safe_desc = first_alert_desc.replace('"', '\\"').replace('\n', ' ')
                 
@@ -344,7 +367,6 @@ def load_live_weather():
             </div>
             """, unsafe_allow_html=True)
             
-            # --- ROBUST NWS PERIOD PAIRING INTO CLEAN DAILY RECORDS ---
             daily_forecasts = []
             i = 0
             while i < len(periods):
@@ -403,11 +425,9 @@ def load_live_weather():
                     })
                 i += 1
 
-            # Set default selected day if not set or invalid
             if not st.session_state.selected_forecast_day or st.session_state.selected_forecast_day not in [d['day'] for d in daily_forecasts]:
                 st.session_state.selected_forecast_day = daily_forecasts[0]['day']
 
-            # --- EXTENDED FORECAST TABS ---
             st.subheader("📅 Outlook")
             tab3, tab7 = st.tabs(["3-Day", "7-Day"])
             
@@ -450,7 +470,6 @@ def load_live_weather():
             if display_low == "N/A":
                 display_low = current_temp_str
 
-            # --- FULL FORECAST DRILL-DOWN LAYER ---
             st.markdown(f"""
             <div style="background: #18191f; border: 1px solid #27272a; border-left: 3px solid #ef4444; border-radius: 10px; padding: 18px 20px; margin-top: 15px;">
                 <div style="font-weight: 700; color: #f87171; font-size: 1.05rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
@@ -482,14 +501,12 @@ def load_live_weather():
             st.image(radar_url, use_container_width=True)
 
     with col_right:
-        # --- WELCOME CARD ---
         st.markdown("""
         <div class="command-card welcome-card">
             👋 <strong>Welcome to Marcus Weather Command.</strong> Your centralized operational dashboard for live local meteorological telemetry, high-definition Doppler radar loops, and emergency alerts. Keep this app active for continuous monitoring.
         </div>
         """, unsafe_allow_html=True)
 
-        # --- COMMUNITY NEWS SECTION ---
         st.markdown('<div id="news-sec"></div>', unsafe_allow_html=True)
         st.subheader("📻 Community News")
         st.markdown("""
@@ -498,7 +515,6 @@ def load_live_weather():
         </div>
         """, unsafe_allow_html=True)
 
-        # --- INSTALL SECTION ---
         st.markdown('<div id="install-sec"></div>', unsafe_allow_html=True)
         st.subheader("📲 Install")
         st.markdown("""
@@ -510,7 +526,6 @@ def load_live_weather():
         """, unsafe_allow_html=True)
 
 
-# Execute auto-refresh telemetry fragment
 load_live_weather()
 
 # ==========================================

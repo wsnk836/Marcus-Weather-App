@@ -3,6 +3,7 @@ import time
 from zoneinfo import ZoneInfo
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 # Page Configuration
 st.set_page_config(
@@ -11,6 +12,47 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+# --- BROWSER LOCALSTORAGE BRIDGE (PUSH NOTIFICATIONS REMOVED) ---
+localStorage_sync_code = """
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasParams = urlParams.has('lat');
+
+    if (hasParams) {
+        if (urlParams.has('lat')) localStorage.setItem('nws_lat', urlParams.get('lat'));
+        if (urlParams.has('lon')) localStorage.setItem('nws_lon', urlParams.get('lon'));
+        if (urlParams.has('loc_name')) localStorage.setItem('nws_loc_name', urlParams.get('loc_name'));
+        sessionStorage.setItem('nws_synced', 'true');
+    } else {
+        const alreadySynced = sessionStorage.getItem('nws_synced');
+        
+        if (!alreadySynced) {
+            const savedLat = localStorage.getItem('nws_lat');
+            const savedLon = localStorage.getItem('nws_lon');
+            const savedLoc = localStorage.getItem('nws_loc_name');
+
+            if (savedLat) {
+                const lat = savedLat || '42.8242';
+                const lon = savedLon || '-95.7994';
+                const loc = savedLoc || 'Marcus, IA';
+                
+                sessionStorage.setItem('nws_synced', 'true');
+                
+                const newUrl = window.location.pathname + `?lat=${lat}&lon=${lon}&loc_name=${encodeURIComponent(loc)}`;
+                
+                if (window.top && window.top.history && window.top.history.replaceState) {
+                    window.top.history.replaceState(null, '', newUrl);
+                    window.top.location.href = newUrl;
+                }
+            } else {
+                sessionStorage.setItem('nws_synced', 'true');
+            }
+        }
+    }
+</script>
+"""
+components.html(localStorage_sync_code, height=0)
 
 # --- TACTICAL CRIMSON & CARBON CSS ---
 st.markdown(
@@ -126,7 +168,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- RESOLVE PERSISTENT QUERY PARAMS (REMEMBERED ACROSS SESSIONS/APP CLOSURES) ---
+# --- RESOLVE & PERSIST QUERY PARAMS ---
 query_params = st.query_params
 default_lat = "42.8242"
 default_lon = "-95.7994"
@@ -134,7 +176,6 @@ default_lon = "-95.7994"
 lat_str = query_params.get("lat", default_lat)
 lon_str = query_params.get("lon", default_lon)
 location_name = query_params.get("loc_name", "Marcus, IA")
-push_param = query_params.get("push_notifications", "false").lower() == "true"
 
 try:
   ACTIVE_LAT = round(float(lat_str), 4)
@@ -143,10 +184,6 @@ except ValueError:
   ACTIVE_LAT = float(default_lat)
   ACTIVE_LON = float(default_lon)
   location_name = "Marcus, IA"
-
-# Synchronize push preference into session state based on URL persistent storage
-if "push_enabled" not in st.session_state:
-  st.session_state.push_enabled = push_param
 
 # --- HERO HEADER ---
 st.markdown(
@@ -179,14 +216,25 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
         ).json()
 
         if geo_resp:
-          st.query_params["lat"] = geo_resp[0]["lat"]
-          st.query_params["lon"] = geo_resp[0]["lon"]
-          st.query_params["loc_name"] = geo_resp[0].get(
-              "display_name", loc_input
-          ).split(",")[0]
-          st.success(
-              f"Location locked to: {geo_resp[0].get('display_name')}"
-          )
+          new_lat = geo_resp[0]["lat"]
+          new_lon = geo_resp[0]["lon"]
+          new_name = geo_resp[0].get("display_name", loc_input).split(",")[0]
+
+          st.query_params["lat"] = new_lat
+          st.query_params["lon"] = new_lon
+          st.query_params["loc_name"] = new_name
+
+          update_js = f"""
+                    <script>
+                        localStorage.setItem('nws_lat', '{new_lat}');
+                        localStorage.setItem('nws_lon', '{new_lon}');
+                        localStorage.setItem('nws_loc_name', '{new_name}');
+                        sessionStorage.setItem('nws_synced', 'true');
+                    </script>
+                    """
+          components.html(update_js, height=0)
+
+          st.success(f"Location locked to: {geo_resp[0].get('display_name')}")
           time.sleep(0.5)
           st.rerun()
         else:
@@ -195,52 +243,6 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
           )
       except Exception as e:
         st.error(f"Geocoding connection error: {e}")
-
-# ==========================================
-# --- PERSISTENT PUSH NOTIFICATIONS SETTINGS ---
-# ==========================================
-with st.expander("🔔 Push Notifications Settings", expanded=False):
-  push_toggle = st.toggle(
-      "Accept Background Push Notifications for Severe Weather Alerts",
-      value=st.session_state.push_enabled,
-      key="push_notification_toggle_widget",
-  )
-
-  # Update state & persist choice directly to browser query parameters so it stays remembered after closing app
-  if push_toggle != st.session_state.push_enabled:
-    st.session_state.push_enabled = push_toggle
-    st.query_params["push_notifications"] = str(push_toggle).lower()
-    if push_toggle:
-      st.success(
-          "✅ Push notifications enabled and saved! Even if you close the app,"
-          " background telemetry dispatch is active for "
-          f"**{location_name}**."
-      )
-    else:
-      st.info("🔕 Push notifications disabled.")
-    time.sleep(0.4)
-    st.rerun()
-
-  if st.session_state.push_enabled:
-    st.markdown(
-        f"""
-        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-left: 3px solid #10b981; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; color: #d1fae5; margin-top: 8px;">
-            🟢 <strong>Status: Active & Registered</strong><br/>
-            Background monitoring is armed for coordinates <strong>({ACTIVE_LAT}, {ACTIVE_LON})</strong>. NWS emergency bulletins will trigger push dispatches to your device session.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-  else:
-    st.markdown(
-        """
-        <div style="background: #121316; border: 1px solid #27272a; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; color: #a1a1aa; margin-top: 8px;">
-            ⚪ <strong>Status: Inactive</strong><br/>
-            Toggle on above to authorize background alerts for your selected location grid.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
 
 # ==========================================
@@ -315,7 +317,10 @@ def load_live_weather(lat, lon, loc_label):
       points_res = requests.get(points_url, headers=headers, timeout=10)
 
       if points_res.status_code != 200:
-        st.error(f"NWS Grid Server error (Code {points_res.status_code}). Try a nearby ZIP code.")
+        st.error(
+            f"NWS Grid Server error (Code {points_res.status_code}). Try a"
+            " nearby ZIP code."
+        )
         return
 
       points_response = points_res.json()
@@ -562,7 +567,8 @@ with st.form("native_feedback_form"):
   )
 
   if fb_submitted:
-    if not fb_name.strip() or not fb_msg.strip():
+    name_val = fb_name if isinstance(fb_name, str) else ""
+    if not name_val.strip() or not fb_msg.strip():
       st.error("Please fill out both your name and message before submitting.")
     else:
       try:
@@ -571,7 +577,7 @@ with st.form("native_feedback_form"):
             "subject": (
                 "💡 Community Feedback and Suggestions from Marcus Command"
             ),
-            "name": fb_name,
+            "name": name_val,
             "location": fb_loc,
             "message": fb_msg,
         }

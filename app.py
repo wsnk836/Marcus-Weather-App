@@ -461,9 +461,11 @@ def load_live_weather(lat, lon):
         """, unsafe_allow_html=True)
 
         st.subheader("📍 Change Location")
-        with st.tab("City Search"):
+        loc_tab_city, loc_tab_coords = st.tabs(["City Search", "Coordinates"])
+        
+        with loc_tab_city:
             with st.form("sidebar_city_form"):
-                new_city = st.text_input("City or ZIP", placeholder="e.g. Chicago, IL")
+                new_city = st.text_input("City or ZIP", placeholder="e.g. North Liberty, IA")
                 if st.form_submit_button("Update City"):
                     if new_city.strip():
                         try:
@@ -477,7 +479,8 @@ def load_live_weather(lat, lon):
                                 st.error("City not found.")
                         except Exception as e:
                             st.error(f"Error: {e}")
-        with st.tab("Coordinates"):
+                            
+        with loc_tab_coords:
             with st.form("coord_form"):
                 manual_lat = st.number_input("Latitude", value=lat, format="%.4f")
                 manual_lon = st.number_input("Longitude", value=lon, format="%.4f")

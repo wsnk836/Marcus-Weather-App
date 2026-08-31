@@ -244,11 +244,22 @@ def load_live_weather():
     # --- ACTIVE SEVERE WEATHER ALERTS ---
     st.markdown('<div id="alerts-sec"></div>', unsafe_allow_html=True)
     
-    col_alert_header, col_alert_toggle = st.columns([3, 1])
+    col_alert_header, col_alert_toggle, col_alert_test = st.columns([2.1, 1.1, 0.8])
     with col_alert_header:
         st.subheader("⚠️ Active NWS Weather Alerts")
     with col_alert_toggle:
         st.session_state.enable_push_alerts = st.toggle("🔔 Push Alerts", value=st.session_state.enable_push_alerts, help="Enable browser push notifications when severe weather is active.")
+    with col_alert_test:
+        if st.button("🧪 Test Alert", help="Forces a test notification to verify browser permissions."):
+            requests_comp.html("""
+            <script>
+                if (window.parent.requestWeatherNotification) {
+                    window.parent.requestWeatherNotification("🚨 TEST: Severe Weather Warning", "This is a simulated test alert for Marcus, IA.");
+                } else {
+                    alert("Notification function not found. Ensure the app is loaded.");
+                }
+            </script>
+            """, height=0, width=0)
 
     try:
         alerts_url = "https://api.weather.gov/alerts/active?point=42.8242,-95.7994"

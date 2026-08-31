@@ -13,18 +13,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- BROWSER LOCALSTORAGE BRIDGE (FINAL BULLETPROOF LOOP FIX) ---
-# Silently grabs saved storage and syncs it via history state strictly ONCE per session.
+# --- BROWSER LOCALSTORAGE BRIDGE (PUSH NOTIFICATIONS REMOVED) ---
 localStorage_sync_code = """
 <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const hasParams = urlParams.has('lat') || urlParams.has('push_notifications');
+    const hasParams = urlParams.has('lat');
 
     if (hasParams) {
         if (urlParams.has('lat')) localStorage.setItem('nws_lat', urlParams.get('lat'));
         if (urlParams.has('lon')) localStorage.setItem('nws_lon', urlParams.get('lon'));
         if (urlParams.has('loc_name')) localStorage.setItem('nws_loc_name', urlParams.get('loc_name'));
-        if (urlParams.has('push_notifications')) localStorage.setItem('nws_push', urlParams.get('push_notifications'));
         sessionStorage.setItem('nws_synced', 'true');
     } else {
         const alreadySynced = sessionStorage.getItem('nws_synced');
@@ -33,21 +31,18 @@ localStorage_sync_code = """
             const savedLat = localStorage.getItem('nws_lat');
             const savedLon = localStorage.getItem('nws_lon');
             const savedLoc = localStorage.getItem('nws_loc_name');
-            const savedPush = localStorage.getItem('nws_push');
 
-            if (savedLat || savedPush) {
+            if (savedLat) {
                 const lat = savedLat || '42.8242';
                 const lon = savedLon || '-95.7994';
                 const loc = savedLoc || 'Marcus, IA';
-                const push = savedPush || 'false';
                 
                 sessionStorage.setItem('nws_synced', 'true');
                 
-                const newUrl = window.location.pathname + `?lat=${lat}&lon=${lon}&loc_name=${encodeURIComponent(loc)}&push_notifications=${push}`;
+                const newUrl = window.location.pathname + `?lat=${lat}&lon=${lon}&loc_name=${encodeURIComponent(loc)}`;
                 
                 if (window.top && window.top.history && window.top.history.replaceState) {
                     window.top.history.replaceState(null, '', newUrl);
-                    // Force a single clean Python rerun by reloading via top-level location once safely
                     window.top.location.href = newUrl;
                 }
             } else {
@@ -181,7 +176,6 @@ default_lon = "-95.7994"
 lat_str = query_params.get("lat", default_lat)
 lon_str = query_params.get("lon", default_lon)
 location_name = query_params.get("loc_name", "Marcus, IA")
-push_param = query_params.get("push_notifications", "false").lower() == "true"
 
 try:
   ACTIVE_LAT = round(float(lat_str), 4)
@@ -190,9 +184,6 @@ except ValueError:
   ACTIVE_LAT = float(default_lat)
   ACTIVE_LON = float(default_lon)
   location_name = "Marcus, IA"
-
-if "push_enabled" not in st.session_state:
-  st.session_state.push_enabled = push_param
 
 # --- HERO HEADER ---
 st.markdown(
@@ -232,16 +223,12 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
           st.query_params["lat"] = new_lat
           st.query_params["lon"] = new_lon
           st.query_params["loc_name"] = new_name
-          st.query_params["push_notifications"] = str(
-              st.session_state.push_enabled
-          ).lower()
 
           update_js = f"""
                     <script>
                         localStorage.setItem('nws_lat', '{new_lat}');
                         localStorage.setItem('nws_lon', '{new_lon}');
                         localStorage.setItem('nws_loc_name', '{new_name}');
-                        localStorage.setItem('nws_push', '{str(st.session_state.push_enabled).lower()}');
                         sessionStorage.setItem('nws_synced', 'true');
                     </script>
                     """
@@ -256,58 +243,6 @@ with st.expander("📍 Change Location (Enter ZIP Code or City Name)", expanded=
           )
       except Exception as e:
         st.error(f"Geocoding connection error: {e}")
-
-# ==========================================
-# --- PERSISTENT PUSH NOTIFICATIONS SETTINGS ---
-# ==========================================
-with st.expander("🔔 Push Notifications Settings", expanded=False):
-
-  def update_push_preference():
-    val = st.session_state.push_notification_toggle_widget
-    st.session_state.push_enabled = val
-    st.query_params["push_notifications"] = str(val).lower()
-    st.query_params["lat"] = str(ACTIVE_LAT)
-    st.query_params["lon"] = str(ACTIVE_LON)
-    st.query_params["loc_name"] = location_name
-
-    sync_script = f"""
-        <script>
-            localStorage.setItem('nws_push', '{str(val).lower()}');
-            localStorage.setItem('nws_lat', '{ACTIVE_LAT}');
-            localStorage.setItem('nws_lon', '{ACTIVE_LON}');
-            localStorage.setItem('nws_loc_name', '{location_name}');
-            sessionStorage.setItem('nws_synced', 'true');
-        </script>
-        """
-    components.html(sync_script, height=0)
-
-  push_toggle = st.toggle(
-      "Accept Background Push Notifications for Severe Weather Alerts",
-      value=st.session_state.push_enabled,
-      key="push_notification_toggle_widget",
-      on_change=update_push_preference,
-  )
-
-  if st.session_state.push_enabled:
-    st.markdown(
-        f"""
-        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-left: 3px solid #10b981; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; color: #d1fae5; margin-top: 8px;">
-            🟢 <strong>Status: Active & Permanently Saved</strong><br/>
-            Your choice is stored in browser local storage for coordinates <strong>({ACTIVE_LAT}, {ACTIVE_LON})</strong>. Closing the app or reopening from your phone's home screen shortcut will restore this setting automatically.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-  else:
-    st.markdown(
-        """
-        <div style="background: #121316; border: 1px solid #27272a; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; color: #a1a1aa; margin-top: 8px;">
-            ⚪ <strong>Status: Inactive</strong><br/>
-            Toggle on above to lock-in your push preferences.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
 
 # ==========================================

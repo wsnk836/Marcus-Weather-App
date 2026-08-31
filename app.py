@@ -219,8 +219,6 @@ def load_live_weather():
     }
 
     # --- INITIALIZE SESSION STATE FOR SELECTED DAY ---
-    if "selected_outlook_tab" not in st.session_state:
-        st.session_state.selected_outlook_tab = "3-Day"
     if "selected_forecast_day" not in st.session_state:
         st.session_state.selected_forecast_day = None
 
@@ -293,50 +291,59 @@ def load_live_weather():
             </div>
             """, unsafe_allow_html=True)
             
-            # --- ROBUST NWS PERIOD PARSING & DAY MAPPING ---
-            daily_map = {}
-            for p in periods:
-                name = p['name']
-                is_day = p['isDaytime']
+            # --- ROBUST NWS PERIOD PAIRING INTO CLEAN DAILY RECORDS ---
+            daily_forecasts = []
+            i = 0
+            while i < len(periods):
+                p = periods[i]
                 temp_str = f"{p['temperature']}°{p['temperatureUnit']}"
                 
-                if is_day:
-                    day_key = name
+                if p['isDaytime']:
+                    day_name = p['name']
+                    day_detailed = p['detailedForecast']
+                    wind_speed = p['windSpeed']
+                    wind_dir = p.get('windDirection', '')
+                    high_temp = temp_str
+                    
+                    low_temp = "N/A"
+                    night_detailed = ""
+                    
+                    # Look ahead for corresponding nighttime period
+                    if i + 1 < len(periods) and not periods[i+1]['isDaytime']:
+                        night_p = periods[i+1]
+                        low_temp = f"{night_p['temperature']}°{night_p['temperatureUnit']}"
+                        night_detailed = night_p['detailedForecast']
+                        i += 1
+                        
+                    daily_forecasts.append({
+                        "day": day_name,
+                        "high": high_temp,
+                        "low": low_temp,
+                        "detailed": day_detailed,
+                        "low_detailed": night_detailed,
+                        "wind_speed": wind_speed,
+                        "wind_dir": wind_dir
+                    })
                 else:
-                    if name.lower() == "tonight":
-                        day_key = "Today"
-                    elif name.endswith(" Night"):
-                        day_key = name[:-6].strip()
+                    # Starts with a nighttime period (e.g. Tonight)
+                    night_name = p['name']
+                    if night_name.lower() == "tonight":
+                        day_label = "Today"
                     else:
-                        day_key = name.replace(" Night", "").strip()
-                
-                if day_key not in daily_map:
-                    daily_map[day_key] = {
-                        "day": day_key,
+                        day_label = night_name.replace(" Night", "").strip()
+                        
+                    daily_forecasts.append({
+                        "day": day_label,
                         "high": "N/A",
-                        "low": "N/A",
-                        "forecast": p['shortForecast'],
+                        "low": temp_str,
                         "detailed": "",
-                        "low_detailed": "",
+                        "low_detailed": p['detailedForecast'],
                         "wind_speed": p['windSpeed'],
-                        "wind_dir": p.get('windDirection', ''),
-                        "icon": p.get('icon', '')
-                    }
-                
-                if is_day:
-                    daily_map[day_key]["high"] = temp_str
-                    daily_map[day_key]["forecast"] = p['shortForecast']
-                    daily_map[day_key]["detailed"] = p['detailedForecast']
-                    daily_map[day_key]["wind_speed"] = p['windSpeed']
-                    daily_map[day_key]["wind_dir"] = p.get('windDirection', '')
-                    daily_map[day_key]["icon"] = p.get('icon', '')
-                else:
-                    daily_map[day_key]["low"] = temp_str
-                    daily_map[day_key]["low_detailed"] = p['detailedForecast']
+                        "wind_dir": p.get('windDirection', '')
+                    })
+                i += 1
 
-            daily_forecasts = list(daily_map.values())
-
-            # Set default selected day if not set
+            # Set default selected day if not set or invalid
             if not st.session_state.selected_forecast_day or st.session_state.selected_forecast_day not in [d['day'] for d in daily_forecasts]:
                 st.session_state.selected_forecast_day = daily_forecasts[0]['day']
 
@@ -389,9 +396,7 @@ def load_live_weather():
                 <div style="font-weight: 700; color: #f87171; font-size: 1.05rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
                     🏛️ Full NWS Forecast Report • {selected_record['day']}
                 </div>
-                <div style="font-size: 0.92rem; color: #f4f4f5; margin-bottom: 8px; line-height: 1.6;">
-                    <strong>Forecast Details:</strong> {selected_record['detailed'] if selected_record['detailed'] else selected_record['forecast']}
-                </div>
+                {f'<div style="font-size: 0.92rem; color: #f4f4f5; margin-bottom: 8px; line-height: 1.6;"><strong>Daytime Forecast:</strong> {selected_record["detailed"]}</div>' if selected_record['detailed'] else ''}
                 {f'<div style="font-size: 0.92rem; color: #d4d4d8; margin-bottom: 12px; line-height: 1.6;"><strong>Nighttime Forecast:</strong> {selected_record["low_detailed"]}</div>' if selected_record['low_detailed'] else ''}
                 <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 0.85rem; color: #a1a1aa; border-top: 1px solid #27272a; padding-top: 10px;">
                     <div>🌡️ High: <strong style="color: #fafafa;">{display_high}</strong></div>
@@ -504,7 +509,7 @@ requests_comp.html("""
             cursor: pointer;
             width: 100%;
             margin-top: 4px;
-            transition: opacity: 0.2s;
+            transition: opacity 0.2s;
         }
         button:hover { opacity: 0.9; }
         #result { margin-top: 8px; font-size: 0.88rem; text-align: center; }

@@ -126,6 +126,55 @@ st.markdown("""
         margin-bottom: 12px;
         color: #d1fae5;
     }
+    /* Radar map overlay styling */
+    .radar-wrapper {
+        position: relative;
+        width: 100%;
+        background: #121316;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #27272a;
+    }
+    .radar-img {
+        width: 100%;
+        display: block;
+    }
+    .marcus-pin-container {
+        position: absolute;
+        top: 52%;
+        left: 58%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        pointer-events: none;
+    }
+    .marcus-dot {
+        width: 12px;
+        height: 12px;
+        background-color: #38bdf8;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #38bdf8, 0 0 20px #38bdf8;
+        animation: pulse-dot 2s infinite;
+    }
+    .marcus-label {
+        background: rgba(12, 13, 16, 0.85);
+        color: #38bdf8;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        margin-top: 3px;
+        white-space: nowrap;
+        letter-spacing: 0.03em;
+    }
+    @keyframes pulse-dot {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    }
     [data-testid="stMetric"] {
         background: #121316;
         border: 1px solid #27272a;
@@ -170,7 +219,6 @@ st.markdown("""
 # --- BACKGROUND WAKE LOCK & PERSISTENT NOTIFICATION ENGINE ---
 requests_comp.html("""
 <script>
-    // Request Screen Wake Lock to prevent mobile browsers from sleeping app loop
     let wakeLock = null;
     async function requestWakeLock() {
         try {
@@ -184,14 +232,12 @@ requests_comp.html("""
     }
     requestWakeLock();
 
-    // Re-acquire wake lock if visibility changes back to app
     document.addEventListener('visibilitychange', async () => {
         if (wakeLock !== null && document.visibilityState === 'visible') {
             await requestWakeLock();
         }
     });
 
-    // Global Browser Notification Handler with Permission Persistence
     window.parent.requestWeatherNotification = function(title, bodyText) {
         if (!("Notification" in window.parent)) {
             console.log("This browser does not support desktop notifications.");
@@ -262,12 +308,11 @@ def load_live_weather():
         "Accept": "application/geo+json"
     }
 
-    # --- INITIALIZE SESSION STATE & PERSISTENT URL PARAMS ---
     if "selected_forecast_day" not in st.session_state:
         st.session_state.selected_forecast_day = None
 
     if "enable_push_alerts" not in st.session_state:
-        param_val = st.query_params.get("push_alerts", "true") # Default to True for seamless alert coverage
+        param_val = st.query_params.get("push_alerts", "true")
         st.session_state.enable_push_alerts = (str(param_val).lower() == "true")
 
     def update_push_preference():
@@ -491,14 +536,23 @@ def load_live_weather():
 
         st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
 
-        # --- LIVE RADAR LOOP ---
+        # --- LIVE RADAR LOOP WITH MARCUS BLUE DOT PIN ---
         st.markdown('<div id="radar-sec"></div>', unsafe_allow_html=True)
         st.subheader("📡 Live Doppler Radar (KFSD)")
         cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
-        st.caption(f"🔄 Sync active • {cst_time}")
+        st.caption(f"🔄 Sync active • {cst_time} • 📍 Marcus, IA indicated by blue target dot")
+        
         radar_url = f"https://radar.weather.gov/ridge/standard/KFSD_loop.gif?t={int(time.time())}"
-        with st.container(border=True):
-            st.image(radar_url, use_container_width=True)
+        
+        st.markdown(f"""
+        <div class="radar-wrapper">
+            <img src="{radar_url}" class="radar-img" alt="KFSD Radar Loop">
+            <div class="marcus-pin-container">
+                <div class="marcus-dot"></div>
+                <div class="marcus-label">Marcus, IA</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col_right:
         st.markdown("""

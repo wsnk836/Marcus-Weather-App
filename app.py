@@ -259,16 +259,33 @@ def load_live_weather(lat, lon, loc_label):
     st.subheader(f"🌦️ Current Conditions ({loc_label})")
     try:
       points_url = f"https://api.weather.gov/points/{lat},{lon}"
-      points_response = requests.get(
-          points_url, headers=headers, timeout=10
-      ).json()
-      forecast_url = points_response["properties"]["forecast"]
+      points_res = requests.get(points_url, headers=headers, timeout=10)
 
-      forecast_response = requests.get(
-          forecast_url, headers=headers, timeout=10
-      ).json()
+      if points_res.status_code != 200:
+        st.error(f"NWS Grid Server error (Code {points_res.status_code}). Try a nearby ZIP code.")
+        return
+
+      points_response = points_res.json()
+      if "properties" not in points_response:
+        st.error("Received malformed data telemetry from NWS servers.")
+        return
+
+      forecast_url = points_response["properties"].get("forecast")
+      if not forecast_url:
+        st.error("Could not resolve forecast URL for this specific coordinate zone.")
+        return
+
+      forecast_res = requests.get(forecast_url, headers=headers, timeout=10)
+      if forecast_res.status_code != 200:
+        st.error("Could not reach NWS forecast servers.")
+        return
+
+      forecast_response = forecast_res.json()
+      if "properties" not in forecast_response:
+        st.error("Forecast data stream currently unavailable.")
+        return
+
       periods = forecast_response["properties"]["periods"]
-
       current = periods[0]
 
       m1, m2, m3 = st.columns(3)

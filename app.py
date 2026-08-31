@@ -3,7 +3,7 @@ import streamlit.components.v1 as components
 import requests
 import time
 
-# Page Configuration (Sets the browser tab and mobile bookmark name)
+# Page Configuration
 st.set_page_config(
     page_title="Marcus Weather", 
     page_icon="📡",
@@ -11,12 +11,25 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- MODERN WEATHER CONSOLE CUSTOM CSS & MOBILE META TAGS ---
+# --- AUTOMATIC MOBILE & BROWSER NAMING ---
+components.html("""
+<script>
+    window.parent.document.title = "Marcus Weather";
+    
+    let metaApple = window.parent.document.createElement('meta');
+    metaApple.name = "apple-mobile-web-app-title";
+    metaApple.content = "Marcus Weather";
+    window.parent.document.head.appendChild(metaApple);
+
+    let metaApp = window.parent.document.createElement('meta');
+    metaApp.name = "application-name";
+    metaApp.content = "Marcus Weather";
+    window.parent.document.head.appendChild(metaApp);
+</script>
+""", height=0, width=0)
+
+# --- MODERN WEATHER CONSOLE CUSTOM CSS ---
 st.markdown("""
-<head>
-    <meta name="apple-mobile-web-app-title" content="Marcus Weather">
-    <meta name="application-name" content="Marcus Weather">
-</head>
 <style>
     /* Dark console background theme & global font adjustments */
     .stApp {

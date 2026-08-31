@@ -129,7 +129,7 @@ st.markdown("""
         border: 2px solid #ffffff;
         border-radius: 50%;
         box-shadow: 0 0 10px #38bdf8, 0 0 20px #38bdf8;
-        animation: pulse-dot 2s infinite;
+        animation: portal-dot 2s infinite;
     }
     .user-label {
         background: rgba(12, 13, 16, 0.85);
@@ -142,11 +142,6 @@ st.markdown("""
         margin-top: 3px;
         white-space: nowrap;
         letter-spacing: 0.03em;
-    }
-    @keyframes pulse-dot {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
     }
     [data-testid="stMetric"] {
         background: #121316;
@@ -189,7 +184,7 @@ st.markdown("""
 st.markdown("""
 <div class="hero-banner">
     <div class="hero-title">📡 Weather Command</div>
-    <div class="hero-subtitle">Real-time NWS Telemetry & Live Device Geolocation</div>
+    <div class="hero-subtitle">Real-time NWS Telemetry & Precision Location Mapping</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -197,13 +192,13 @@ query_params = st.query_params
 user_lat = query_params.get("lat")
 user_lon = query_params.get("lon")
 
-# If GPS coordinates are not yet provided, show the explicit permission request component
+# If GPS coordinates are missing, offer GPS prompt and easy City Search
 if not user_lat or not user_lon:
     st.markdown("""
     <div class="permission-box">
-        <h2 style="color: #f87171; margin-bottom: 12px;">📍 Device Location Required</h2>
+        <h2 style="color: #f87171; margin-bottom: 12px;">📍 Location Setup Required</h2>
         <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin-bottom: 25px;">
-            Click below to grant device location access. This ensures your exact GPS coordinates are mapped to the radar and local NWS weather station.
+            Browser GPS can sometimes be inaccurate on desktop networks. Use GPS auto-detect below or enter your city/ZIP directly.
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -211,7 +206,7 @@ if not user_lat or not user_lon:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         requests_comp.html("""
-        <div style="text-align: center;">
+        <div style="text-align: center; margin-bottom: 20px;">
             <button onclick="requestDeviceLocation()" style="
                 background-color: #ef4444; 
                 color: white; 
@@ -224,7 +219,7 @@ if not user_lat or not user_lon:
                 box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
                 width: 100%;
             ">
-                📍 Share Device Location
+                📍 Detect GPS Location
             </button>
         </div>
         <script>
@@ -240,8 +235,7 @@ if not user_lat or not user_lon:
                             window.location.href = url.toString();
                         },
                         (error) => {
-                            alert("Location access denied or unavailable. Please check your browser permissions.");
-                            console.warn("Geolocation error: ", error.message);
+                            alert("Location access denied or unavailable.");
                         },
                         { timeout: 10000, maximumAge: 0, enableHighAccuracy: true }
                     );
@@ -249,21 +243,26 @@ if not user_lat or not user_lon:
                     alert("Geolocation is not supported by your browser.");
                 }
             }
-            // Auto-trigger prompt on load
-            window.onload = function() {
-                setTimeout(requestDeviceLocation, 500);
-            };
         </script>
-        """, height=80)
+        """, height=70)
 
-        with st.expander("📍 Or Enter Coordinates Manually"):
-            with st.form("manual_coord_form"):
-                man_lat = st.number_input("Latitude", value=41.8781, format="%.4f")
-                man_lon = st.number_input("Longitude", value=-87.6298, format="%.4f")
-                if st.form_submit_button("Load Location"):
-                    st.query_params["lat"] = str(man_lat)
-                    st.query_params["lon"] = str(man_lon)
-                    st.rerun()
+        with st.expander("🏙️ Search by City or ZIP Code (Recommended)", expanded=True):
+            with st.form("city_search_form"):
+                city_query = st.text_input("Enter City, State or ZIP", placeholder="e.g. North Liberty, IA or 52317")
+                if st.form_submit_button("Lookup Location"):
+                    if city_query.strip():
+                        try:
+                            geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(city_query)}&format=json&limit=1"
+                            geo_resp = requests.get(geo_url, headers={"User-Agent": "WeatherCommandApp"}, timeout=5).json()
+                            if geo_resp:
+                                st.query_params["lat"] = geo_resp[0]["lat"]
+                                st.query_params["lon"] = geo_resp[0]["lon"]
+                                st.rerun()
+                            else:
+                                st.error("Location not found. Please try a more specific city or ZIP code.")
+                        except Exception as e:
+                            st.error(f"Geocoding error: {e}")
+
     st.stop()
 
 try:
@@ -440,7 +439,7 @@ def load_live_weather(lat, lon):
 
         st.subheader(f"📡 Live Doppler Radar ({radar_station})")
         cst_time = datetime.now(ZoneInfo("America/Chicago")).strftime('%I:%M:%S %p %Z')
-        st.caption(f"🔄 Sync active • {cst_time} • 📍 Device location anchored to ({lat:.4f}, {lon:.4f})")
+        st.caption(f"🔄 Sync active • {cst_time} • 📍 Location anchored to ({lat:.4f}, {lon:.4f})")
         
         radar_url = f"https://radar.weather.gov/ridge/standard/{radar_station}_loop.gif?t={int(time.time())}"
         
@@ -449,7 +448,7 @@ def load_live_weather(lat, lon):
             <img src="{radar_url}" class="radar-img" alt="Radar Loop">
             <div class="user-pin-container">
                 <div class="user-dot"></div>
-                <div class="user-label">Your Device Location</div>
+                <div class="user-label">Your Location</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -457,19 +456,34 @@ def load_live_weather(lat, lon):
     with col_right:
         st.markdown("""
         <div class="command-card welcome-card">
-            👋 <strong>Device GPS Locked.</strong> Your browser GPS coordinates are actively anchoring the radar pin and NWS warning feeds.
+            👋 <strong>Location Locked.</strong> Your radar pin and NWS warning feeds are currently mapped to your selected area.
         </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("📍 Location Override")
-        with st.form("coord_form"):
-            st.write("Manually adjust coordinates if needed:")
-            manual_lat = st.number_input("Latitude", value=lat, format="%.4f")
-            manual_lon = st.number_input("Longitude", value=lon, format="%.4f")
-            submitted = st.form_submit_button("Update Location")
-            if submitted:
-                st.query_params["lat"] = str(manual_lat)
-                st.query_params["lon"] = str(manual_lon)
-                st.rerun()
+        st.subheader("📍 Change Location")
+        with st.tab("City Search"):
+            with st.form("sidebar_city_form"):
+                new_city = st.text_input("City or ZIP", placeholder="e.g. Chicago, IL")
+                if st.form_submit_button("Update City"):
+                    if new_city.strip():
+                        try:
+                            geo_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(new_city)}&format=json&limit=1"
+                            geo_resp = requests.get(geo_url, headers={"User-Agent": "WeatherCommandApp"}, timeout=5).json()
+                            if geo_resp:
+                                st.query_params["lat"] = geo_resp[0]["lat"]
+                                st.query_params["lon"] = geo_resp[0]["lon"]
+                                st.rerun()
+                            else:
+                                st.error("City not found.")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+        with st.tab("Coordinates"):
+            with st.form("coord_form"):
+                manual_lat = st.number_input("Latitude", value=lat, format="%.4f")
+                manual_lon = st.number_input("Longitude", value=lon, format="%.4f")
+                if st.form_submit_button("Update Coordinates"):
+                    st.query_params["lat"] = str(manual_lat)
+                    st.query_params["lon"] = str(manual_lon)
+                    st.rerun()
 
 load_live_weather(lat, lon)
